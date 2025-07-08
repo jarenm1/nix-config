@@ -17,13 +17,4 @@
     git
     neovim
   ];
-  
-  services.quickshell = {
-    enable = true;
-    startupWidgets = [ "statusbar" ];
-  };
-
-  programs.ghostty.enable = true;
-  programs.zed-editor.enable = true;
-  programs.zen-browser.enable = true;
 }

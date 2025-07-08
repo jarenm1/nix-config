@@ -30,8 +30,6 @@
     LC_TIME = "en_US.UTF-8";
   };
   
-  programs.nushell.enable = true;
-  
   users.users.jaren= {
     isNormalUser = true;
     description = "jaren";
@@ -52,9 +50,8 @@
   environment.systemPackages = with pkgs; [
     vim
     kitty
+    nushell
   ];
-  
-  
   
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
   

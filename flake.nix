@@ -13,17 +13,16 @@
     };
   };
 
-  outputs = { self, nixpkgs, home-manager, ... }@inputs: {
-    let 
+  outputs = { self, nixpkgs, home-manager, ... }@inputs:
+    let
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
     in {
-    nixosConfigurations.default = nixpkgs.lib.nixosSystem {
-      specialArgs = {inherit inputs;};
-      modules = [
-        ./hosts/default/configuration.nix
-        home-manager.nixosModules.default
-      ];
+      nixosConfigurations.default = nixpkgs.lib.nixosSystem {
+        specialArgs = {inherit inputs;};
+        modules = [
+          ./hosts/default/configuration.nix
+          home-manager.nixosModules.default
+        ];
+      };
     };
-  };
-}
