@@ -2,6 +2,8 @@
 {
   imports = [
     ./hardware-configuration.nix
+    ../../modules/nixos/hyprland.nix
+    ../../modules/nixos/fonts.nix
   ];
   
   boot.loader.grub = {

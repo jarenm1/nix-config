@@ -1,22 +1,12 @@
-{ config, lib, pkgs, ... }:
+{ pkgs, inputs, ... }:
 
-with lib;
-
-let
-  cfg = config.programs.zen-browser;
-in
 {
-  options.programs.zen-browser = {
-    enable = mkEnableOption "Zen Browser";
+  imports = [
+    inputs.zen-browser
+  ];
 
-    package = mkOption {
-      type = types.package;
-      default = config.nixpkgs.hostPlatform.system;
-      description = "The Zen Browser package to use.";
-    };
-  };
-
-  config = mkIf cfg.enable {
-    home.packages = [ cfg.package ];
-  };
+  programs.zen-browser = {
+    enable = true;
+    # other zen config below
+  }
 }
