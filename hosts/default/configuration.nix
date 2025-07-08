@@ -2,7 +2,6 @@
 {
   imports = [
     ./hardware-configuration.nix
-    ../../modules/nixos/default.nix
   ];
   
   boot.loader.grub = {
