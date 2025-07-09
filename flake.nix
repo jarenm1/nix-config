@@ -13,7 +13,7 @@
     };
   };
   
-  outputs = inputs@{ nixpks, home-manager, ... }: {
+  outputs = inputs@{ nixpkgs, home-manager, ... }: {
     nixosConfigurations = {
       system = "x86_64-linux";
       modules = [
