@@ -6,12 +6,8 @@
     ../../modules/nixos/fonts.nix
   ];
   
-  boot.loader.grub = {
-    enable = true;
-    device = "/dev/vda";
-    useOSProber = true;
-    efiSupport = true;
-  };
+  boot.loader.systemd-boot.enable = true;
+  boot.loader.efi.canTouchEfiVariables = true;
   
   networking.hostName = "nixos";
   networking.networkmanager.enable = true;
