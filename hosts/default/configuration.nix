@@ -39,13 +39,6 @@
     shell = pkgs.nushell;  
   };
   
-  home-manager = {
-    extraSpecialArgs = { inherit inputs; };
-    users = {
-      "jaren" = import ./home.nix;
-    };
-  };
-  
   nixpkgs.config.allowUnfree = true;
   
   environment.systemPackages = with pkgs; [

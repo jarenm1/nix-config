@@ -12,18 +12,20 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
-
-  outputs = { self, nixpkgs, home-manager, ... }@inputs:
-    let
-      system = "x86_64-linux";
-      pkgs = nixpkgs.legacyPackages.${system};
-    in {
-      nixosConfigurations.default = nixpkgs.lib.nixosSystem {
-        specialArgs = {inherit inputs;};
-        modules = [
-          ./hosts/default/configuration.nix
-          home-manager.nixosModules.default
-        ];
-      };
-    };
+  
+  outputs = inputs@{ nixpks, home-manager, ... }: {
+  nixosConfigurations = {
+    system = "x86_64-linux";
+    modules = [
+      ./hosts/default/configuration.nix
+      home-manager.nixosModules.home-manager
+      {
+        home-manager.useGlobalPkgs = true;
+        home-manager.useUserPackages = true;
+        home-manager.users.jaren = ./hosts/default/home.nix;
+        home-manager.extraSpecialArgs = { inherit inputs; };
+      }
+    ]
+  }
+  }
 }
