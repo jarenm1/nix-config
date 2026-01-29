@@ -36,13 +36,26 @@
 
   nixpkgs.config.allowUnfree = true;
 
+  hardware.bluetooth.enable = true;
+
   environment.systemPackages = [
     pkgs.vim
     pkgs.kitty
     pkgs.nushell
   ];
 
+  networking.firewall.allowedTCPPorts = [ 8081 22 19000 19001 19002 19003 19004 19005 19006 ];
+  networking.firewall.allowedUDPPorts = [ 8081 22 19000 19001 19002 19003 19004 19005 19006 ];
+  networking.firewall.trustedInterfaces = [ "tailscale0" ];
+
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
 
-  system.stateVersion = "24.05";
+  programs.steam.enable = true;
+  programs.steam.gamescopeSession.enable = true;
+
+  programs.gamemode.enable = true;
+  services.tailscale.enable = true;
+  services.openssh.enable = true;
+
+  system.stateVersion = "25.05";
 }
