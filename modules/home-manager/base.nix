@@ -1,13 +1,11 @@
-{ pkgs, inputs, ... }:
-{
+# Home Manager Base Configuration
+{ pkgs, inputs, ... }: {
   imports = [
     inputs.zen-browser.homeModules.beta
-    inputs.nix-openclaw.homeManagerModules.openclaw
   ];
 
   home.username = "jaren";
   home.homeDirectory = "/home/jaren";
-
   home.stateVersion = "25.05";
 
   home.packages = [
@@ -48,12 +46,12 @@
     pkgs.gcc
     pkgs.clang-tools
     pkgs.md-tui
+    pkgs.swaybg
     pkgs.direnv
     pkgs.nix-direnv
     pkgs.libreoffice
-    pkgs.discord
-    pkgs.fastfetch
     pkgs.zathura
+    pkgs.fastfetch
     inputs.codex.packages.${pkgs.system}.default
     inputs.rose-pine-hyprcursor.packages.${pkgs.system}.default
     inputs.canvas-cli.packages.${pkgs.system}.default
@@ -69,14 +67,13 @@
     background-opacity = 0.8;
   };
 
-
   dconf.enable = true;
-
   dconf.settings = {
     "org.freedesktop.appearance" = {
       "color-scheme" = "prefer-dark";
     };
   };
+
   programs.helix.enable = true;
   programs.helix.settings = {
     theme = "gruber-darker";
@@ -87,36 +84,4 @@
       insert = "bar";
     };
   };
-
-  # Openclaw AI assistant gateway
-  programs.openclaw = {
-    enable = true;
-    # Use relative path to local documents (in nix-config repo)
-    documents = ../../openclaw-documents;
-
-    config = {
-      gateway = {
-        mode = "local";
-        auth = {
-          token = "fee62b8b128be2dabeef4ed6e38ba1fbcba2064f17a753b95e0ee48274d7375f7129259c229646afc9d2a2ea621a11fcc78e951e2ccb36cd1c430bfbcc74684c";
-        };
-      };
-
-      channels.telegram = {
-        tokenFile = "/home/jaren/.secrets/telegram-bot-token";
-        allowFrom = [ "8545827554" ];
-        groups = {
-          "*" = { requireMention = true; };
-        };
-      };
-    };
-
-    instances.default = {
-      enable = true;
-      plugins = [
-        # Add plugins here as needed
-      ];
-    };
-  };
-
 }

@@ -1,0 +1,16 @@
+# Secrets - never commit these!
+secrets/
+*.key
+*.token
+*.secret
+.env
+
+# Nix build artifacts
+result
+result-*
+
+# Temporary files
+*.swp
+*.swo
+*~
+.DS_Store
