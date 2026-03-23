@@ -1,8 +1,12 @@
 # Home Manager Niri Configuration
 # Focused on scroll and gesture support
-{ pkgs, ... }: {
+{ pkgs, lib, ... }: {
   programs.niri.config = ''
     spawn-at-startup "${pkgs.swaybg}/bin/swaybg" "-i" "/home/jaren/Downloads/background.jpg" "-m" "fill"
+
+    xwayland-satellite {
+      path "${lib.getExe pkgs.xwayland-satellite-stable}"
+    }
 
     input {
       touchpad {
@@ -41,6 +45,7 @@
       
       // Window management
       Mod+C repeat=false { close-window; }
+      Mod+V { toggle-window-floating; }
       
       // Focus movement
       Mod+Left { focus-column-left; }

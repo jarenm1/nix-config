@@ -11,9 +11,8 @@ in
     specialArgs = { inherit inputs; };
     modules = [
       # Apply overlays system-wide
-      ({ pkgs, ... }: {
+      ({ lib, pkgs, ... }: {
         nixpkgs.overlays = [
-          inputs.nix-openclaw.overlays.default
           inputs.niri.overlays.niri
         ];
       })
@@ -72,6 +71,10 @@ in
         networking.firewall.trustedInterfaces = [ "tailscale0" ];
 
         nix.settings.experimental-features = [ "nix-command" "flakes" ];
+        nix.settings.builders-use-substitutes = true;
+        nix.settings.max-jobs = 8;
+        nix.settings.trusted-users = lib.mkForce [ "root" "jaren" ];
+        nix.settings.system-features = lib.mkForce [ "nixos-test" "benchmark" "big-parallel" "kvm" ];
 
         programs.steam.enable = true;
         programs.steam.gamescopeSession.enable = true;
@@ -104,16 +107,130 @@ in
       {
         home-manager.useGlobalPkgs = true;
         home-manager.useUserPackages = true;
-        home-manager.users.jaren = { pkgs, inputs, ... }: {
+        home-manager.users.jaren = { pkgs, inputs, ... }:
+        let
+          hermesBootstrap = pkgs.writeShellApplication {
+            name = "hermes-bootstrap";
+            runtimeInputs = [ pkgs.git pkgs.uv pkgs.python311 ];
+            text = ''
+              set -euo pipefail
+
+              repo_dir="''${XDG_DATA_HOME:-$HOME/.local/share}/hermes-agent"
+              config_dir="''${XDG_CONFIG_HOME:-$HOME/.config}/hermes"
+              venv_dir="$repo_dir/.venv"
+
+              mkdir -p "$(dirname "$repo_dir")"
+
+              if [ ! -d "$repo_dir/.git" ]; then
+                git clone --recurse-submodules https://github.com/NousResearch/hermes-agent.git "$repo_dir"
+              else
+                git -C "$repo_dir" submodule update --init --recursive
+              fi
+
+              cd "$repo_dir"
+
+              if [ ! -x "$venv_dir/bin/python" ]; then
+                uv venv "$venv_dir" --python ${pkgs.python311}/bin/python3.11
+              fi
+
+              export VIRTUAL_ENV="$venv_dir"
+              export PATH="$venv_dir/bin:$PATH"
+
+              if [ ! -x "$venv_dir/bin/hermes" ]; then
+                uv pip install -e ".[all]"
+
+                if [ -d "$repo_dir/mini-swe-agent" ]; then
+                  uv pip install -e "$repo_dir/mini-swe-agent"
+                fi
+
+                if [ -d "$repo_dir/tinker-atropos" ]; then
+                  uv pip install -e "$repo_dir/tinker-atropos"
+                fi
+              fi
+
+              mkdir -p "$config_dir"
+
+              if [ ! -f "$config_dir/config.yaml" ] && [ -f "$repo_dir/cli-config.yaml.example" ]; then
+                cp "$repo_dir/cli-config.yaml.example" "$config_dir/config.yaml"
+              fi
+
+              if [ ! -f "$config_dir/.env" ]; then
+                touch "$config_dir/.env"
+              fi
+
+              mkdir -p "$HOME/.local/bin"
+              ln -sf "$venv_dir/bin/hermes" "$HOME/.local/bin/hermes"
+            '';
+          };
+
+          hermes = pkgs.writeShellApplication {
+            name = "hermes";
+            runtimeInputs = [ hermesBootstrap ];
+            text = ''
+              set -euo pipefail
+
+              hermes-bootstrap
+
+              repo_dir="''${XDG_DATA_HOME:-$HOME/.local/share}/hermes-agent"
+              exec "$repo_dir/.venv/bin/hermes" "$@"
+            '';
+          };
+
+          hermesSetup = pkgs.writeShellApplication {
+            name = "hermes-setup";
+            runtimeInputs = [ hermesBootstrap ];
+            text = ''
+              set -euo pipefail
+
+              hermes-bootstrap
+
+              repo_dir="''${XDG_DATA_HOME:-$HOME/.local/share}/hermes-agent"
+              exec "$repo_dir/.venv/bin/hermes" setup "$@"
+            '';
+          };
+
+          hermesUpdate = pkgs.writeShellApplication {
+            name = "hermes-update";
+            runtimeInputs = [ hermesBootstrap pkgs.git pkgs.uv pkgs.python311 ];
+            text = ''
+              set -euo pipefail
+
+              hermes-bootstrap
+
+              repo_dir="''${XDG_DATA_HOME:-$HOME/.local/share}/hermes-agent"
+
+              if [ ! -d "$repo_dir/.git" ]; then
+                echo "Hermes repo is missing. Run: hermes-bootstrap" >&2
+                exit 1
+              fi
+
+              git -C "$repo_dir" pull --ff-only
+              git -C "$repo_dir" submodule update --init --recursive
+
+              export VIRTUAL_ENV="$repo_dir/.venv"
+              export PATH="$VIRTUAL_ENV/bin:$PATH"
+
+              uv pip install -e "''${repo_dir}[all]"
+
+              if [ -d "$repo_dir/mini-swe-agent" ]; then
+                uv pip install -e "$repo_dir/mini-swe-agent"
+              fi
+
+              if [ -d "$repo_dir/tinker-atropos" ]; then
+                uv pip install -e "$repo_dir/tinker-atropos"
+              fi
+            '';
+          };
+        in {
           imports = [
             inputs.zen-browser.homeModules.beta
-            inputs.nix-openclaw.homeManagerModules.openclaw
             ./home-manager/niri.nix
           ];
 
           home.username = "jaren";
           home.homeDirectory = "/home/jaren";
           home.stateVersion = "25.05";
+          home.sessionPath = [ "$HOME/.local/bin" ];
 
           home.packages = [
             pkgs.git
@@ -153,13 +270,22 @@ in
             pkgs.gcc
             pkgs.clang-tools
             pkgs.md-tui
-            pkgs.direnv
-            pkgs.nix-direnv
+            pkgs.uv
+            pkgs.python3
             pkgs.libreoffice
             pkgs.fastfetch
             pkgs.zathura
             pkgs.basedpyright
-            inputs.codex.packages.${pkgs.system}.default
+            pkgs.codex
+            pkgs.codex-acp
+            pkgs.pavucontrol
+            pkgs.discord
+            pkgs.eza
+            pkgs.yazi
+            hermes
+            hermesBootstrap
+            hermesSetup
+            hermesUpdate
             inputs.rose-pine-hyprcursor.packages.${pkgs.system}.default
             inputs.canvas-cli.packages.${pkgs.system}.default
           ];
@@ -167,6 +293,63 @@ in
           programs.zed-editor.enable = true;
           programs.ghostty.enable = true;
           programs.zen-browser.enable = true;
+          programs.nushell = {
+            enable = true;
+            package = null;
+            settings = {
+              show_banner = false;
+            };
+          };
+          programs.direnv = {
+            enable = true;
+            enableNushellIntegration = true;
+            nix-direnv.enable = true;
+          };
+          programs.zoxide = {
+            enable = true;
+            enableNushellIntegration = true;
+          };
+          programs.atuin = {
+            enable = true;
+            enableNushellIntegration = true;
+          };
+          programs.starship = {
+            enable = true;
+            enableNushellIntegration = true;
+            settings = {
+              add_newline = false;
+              command_timeout = 1000;
+              format = "$directory$git_branch$nix_shell$character";
+              right_format = "$battery$time";
+              line_break.disabled = true;
+              character = {
+                success_symbol = "[➜](bold green)";
+                error_symbol = "[➜](bold red)";
+              };
+              directory = {
+                truncation_length = 3;
+                truncate_to_repo = false;
+              };
+              battery = {
+                disabled = false;
+                format = "[$symbol$percentage]($style) ";
+                display = [
+                  {
+                    threshold = 100;
+                    style = "dimmed white";
+                  }
+                ];
+              };
+              git_branch.symbol = " ";
+              nix_shell.symbol = " ";
+              time = {
+                disabled = false;
+                format = "[$time]($style)";
+                time_format = "%m/%d %R";
+                style = "dimmed white";
+              };
+            };
+          };
 
           programs.ghostty.settings = {
             theme = "Gruber Darker";
@@ -189,36 +372,6 @@ in
             };
             editor.cursor-shape = {
               insert = "bar";
-            };
-          };
-
-          # Openclaw with properly packaged config
-          nixpkgs.overlays = [ inputs.nix-openclaw.overlays.default ];
-          
-          programs.openclaw = {
-            enable = true;
-            # Package documents in nix store - use string path relative to flake root
-            documents = "${inputs.self}/openclaw-documents";
-            
-            config = {
-              gateway = {
-                mode = "local";
-                auth = {
-                  token = "fee62b8b128be2dabeef4ed6e38ba1fbcba2064f17a753b95e0ee48274d7375f7129259c229646afc9d2a2ea621a11fcc78e951e2ccb36cd1c430bfbcc74684c";
-                };
-              };
-              channels.telegram = {
-                tokenFile = "/home/jaren/.secrets/telegram-bot-token";
-                allowFrom = [ "8545827554" ];
-                groups = {
-                  "*" = { requireMention = true; };
-                };
-              };
-            };
-
-            instances.default = {
-              enable = true;
-              plugins = [];
             };
           };
         };

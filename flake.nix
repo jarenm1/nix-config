@@ -25,16 +25,8 @@
       url = "github:jarenm1/canvas-cli";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    nix-openclaw = {
-      url = "github:openclaw/nix-openclaw";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     niri = {
       url = "github:sodiboo/niri-flake";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    codex = {
-      url = "github:openai/codex";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
