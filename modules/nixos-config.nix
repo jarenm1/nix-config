@@ -23,13 +23,29 @@ in
       # Enable niri
       ./nixos/niri.nix
       # System configuration
-      ({ pkgs, ... }: {
+      ({ config, pkgs, ... }: {
         imports = [
           ../hosts/nixos/hardware-configuration.nix
         ];
 
         boot.loader.systemd-boot.enable = true;
         boot.loader.efi.canTouchEfiVariables = true;
+        boot.blacklistedKernelModules = [ "nouveau" ];
+        boot.initrd.kernelModules = [
+          "nvidia"
+          "nvidia_modeset"
+          "nvidia_uvm"
+          "nvidia_drm"
+        ];
+        boot.kernelParams = [
+          "rd.driver.blacklist=nouveau"
+          "modprobe.blacklist=nouveau"
+          "nvidia-drm.modeset=1"
+        ];
+        boot.extraModprobeConfig = ''
+          blacklist nouveau
+          options nouveau modeset=0
+        '';
 
         networking.hostName = "nixos";
         networking.networkmanager.enable = true;
@@ -57,6 +73,17 @@ in
         };
 
         nixpkgs.config.allowUnfree = true;
+        services.xserver.videoDrivers = [ "nvidia" ];
+        hardware.nvidia = {
+          modesetting.enable = true;
+          nvidiaSettings = true;
+          open = false;
+          package = config.boot.kernelPackages.nvidiaPackages.stable;
+        };
+        hardware.graphics = {
+          enable = true;
+          enable32Bit = true;
+        };
 
         hardware.bluetooth.enable = true;
 
@@ -64,6 +91,8 @@ in
           pkgs.vim
           pkgs.kitty
           pkgs.nushell
+          pkgs.mesa-demos
+          pkgs.vulkan-tools
         ];
 
         networking.firewall.allowedTCPPorts = [ 8081 22 19000 19001 19002 19003 19004 19005 19006 ];
@@ -80,6 +109,7 @@ in
         programs.steam.gamescopeSession.enable = true;
 
         programs.gamemode.enable = true;
+        services.ratbagd.enable = true;
         services.tailscale.enable = true;
         services.openssh.enable = true;
 
@@ -225,6 +255,7 @@ in
           imports = [
             inputs.zen-browser.homeModules.beta
             ./home-manager/niri.nix
+            ./home-manager/minecraft.nix
           ];
 
           home.username = "jaren";
@@ -278,10 +309,12 @@ in
             pkgs.basedpyright
             pkgs.codex
             pkgs.codex-acp
+            pkgs.piper
             pkgs.pavucontrol
             pkgs.discord
             pkgs.eza
             pkgs.yazi
+            pkgs.ruff
             hermes
             hermesBootstrap
             hermesSetup
@@ -289,6 +322,13 @@ in
             inputs.rose-pine-hyprcursor.packages.${pkgs.system}.default
             inputs.canvas-cli.packages.${pkgs.system}.default
           ];
+
+          programs.mcsr = {
+            enable = true;
+            ninjabrain.enable = true;
+            obs.enable = true;
+            waywall.enable = true;
+          };
 
           programs.zed-editor.enable = true;
           programs.ghostty.enable = true;

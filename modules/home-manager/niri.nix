@@ -42,6 +42,7 @@
       // Spawn programs
       Mod+Q { spawn "ghostty"; }
       Mod+R { spawn "wofi" "--show" "drun"; }
+      Ctrl+Super+S { screenshot; }
       
       // Window management
       Mod+C repeat=false { close-window; }
