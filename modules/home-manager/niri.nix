@@ -14,6 +14,11 @@
         natural-scroll
         scroll-factor 0.1
       }
+
+      mouse {
+        accel-profile "flat"
+        accel-speed -0.6
+      }
     }
     
     layout {

@@ -1,0 +1,9 @@
+default partial function_keys alphanumeric_keys modifier_keys
+
+xkb_symbols "basic" {
+    include "us(basic)"
+    name[Group1]= "English (US, MC)";
+
+    key <AB08> {[ F20, F20 ]};
+    key <AB09> {[ F21, F21 ]};
+};

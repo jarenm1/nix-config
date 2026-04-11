@@ -23,12 +23,57 @@ in
       # Enable niri
       ./nixos/niri.nix
       # System configuration
-      ({ config, pkgs, ... }: {
+      ({ config, pkgs, ... }:
+      let
+        prismStreamLauncher = pkgs.writeShellApplication {
+          name = "prism-stream-launcher";
+          runtimeInputs = [ pkgs.gamemode pkgs.prismlauncher ];
+          text = ''
+            export GLFW_PLATFORM=x11
+            exec gamemoderun prismlauncher "$@"
+          '';
+        };
+
+        prismStreamInstance = pkgs.writeShellApplication {
+          name = "prism-stream-instance";
+          runtimeInputs = [ pkgs.gamemode pkgs.prismlauncher ];
+          text = ''
+            set -euo pipefail
+
+            if [ "$#" -lt 1 ]; then
+              echo "usage: prism-stream-instance <instance-id> [extra prism args...]" >&2
+              exit 2
+            fi
+
+            instance_id="$1"
+            shift
+
+            export GLFW_PLATFORM=x11
+            exec gamemoderun prismlauncher -l "$instance_id" "$@"
+          '';
+        };
+
+        sunshineSetCreds = pkgs.writeShellApplication {
+          name = "sunshine-set-creds";
+          runtimeInputs = [ pkgs.sunshine ];
+          text = ''
+            set -euo pipefail
+
+            if [ "$#" -ne 2 ]; then
+              echo "usage: sunshine-set-creds <username> <password>" >&2
+              exit 2
+            fi
+
+            sunshine --creds "$1" "$2"
+          '';
+        };
+      in {
         imports = [
           ../hosts/nixos/hardware-configuration.nix
         ];
 
         boot.loader.systemd-boot.enable = true;
+        boot.loader.systemd-boot.configurationLimit = 5;
         boot.loader.efi.canTouchEfiVariables = true;
         boot.blacklistedKernelModules = [ "nouveau" ];
         boot.initrd.kernelModules = [
@@ -68,9 +113,11 @@ in
         users.users.jaren = {
           isNormalUser = true;
           description = "jaren";
-          extraGroups = [ "networkmanager" "wheel" ];
+          extraGroups = [ "networkmanager" "wheel" "ydotool" "uinput" ];
           shell = pkgs.nushell;
         };
+
+        programs.ydotool.enable = true;
 
         nixpkgs.config.allowUnfree = true;
         services.xserver.videoDrivers = [ "nvidia" ];
@@ -84,8 +131,20 @@ in
           enable = true;
           enable32Bit = true;
         };
+        hardware.uinput.enable = true;
 
         hardware.bluetooth.enable = true;
+        security.rtkit.enable = true;
+
+        services.pulseaudio.enable = false;
+        services.pipewire = {
+          enable = true;
+          alsa.enable = true;
+          alsa.support32Bit = true;
+          audio.enable = true;
+          jack.enable = true;
+          pulse.enable = true;
+        };
 
         environment.systemPackages = [
           pkgs.vim
@@ -93,6 +152,9 @@ in
           pkgs.nushell
           pkgs.mesa-demos
           pkgs.vulkan-tools
+          prismStreamLauncher
+          prismStreamInstance
+          sunshineSetCreds
         ];
 
         networking.firewall.allowedTCPPorts = [ 8081 22 19000 19001 19002 19003 19004 19005 19006 ];
@@ -112,6 +174,42 @@ in
         services.ratbagd.enable = true;
         services.tailscale.enable = true;
         services.openssh.enable = true;
+        services.gnome.gnome-keyring.enable = true;
+        services.sunshine = {
+          enable = true;
+          openFirewall = true;
+          capSysAdmin = true;
+          applications = {
+            apps = [
+              {
+                name = "Prism Launcher";
+                cmd = lib.getExe prismStreamLauncher;
+                "auto-detach" = true;
+                "wait-all" = true;
+                "exit-timeout" = 5;
+              }
+            ];
+          };
+        };
+
+        xdg.portal = {
+          enable = true;
+          xdgOpenUsePortal = true;
+          extraPortals = [
+            pkgs.xdg-desktop-portal-gnome
+            pkgs.xdg-desktop-portal-gtk
+          ];
+          config.niri = {
+            default = [
+              "gnome"
+              "gtk"
+            ];
+            "org.freedesktop.impl.portal.Access" = "gtk";
+            "org.freedesktop.impl.portal.FileChooser" = "gtk";
+            "org.freedesktop.impl.portal.Notification" = "gtk";
+            "org.freedesktop.impl.portal.Secret" = "gnome-keyring";
+          };
+        };
 
         system.stateVersion = "25.05";
       })
@@ -128,6 +226,7 @@ in
       ({ pkgs, ... }: {
         fonts.packages = with pkgs; [
           roboto
+          roboto-serif
           inter
         ];
       })
@@ -251,11 +350,36 @@ in
               fi
             '';
           };
+
+          theme = {
+            background = "#181818";
+            backgroundAlt = "#1f1f1f";
+            surface = "#282828";
+            border = "#54494e";
+            foreground = "#e4e4e4";
+            foregroundBright = "#f5f5f5";
+            accent = "#92a7cb";
+            accentStrong = "#ffdb00";
+            success = "#42dc00";
+            danger = "#ff3851";
+            backgroundRgb = "24,24,24";
+            backgroundAltRgb = "31,31,31";
+            surfaceRgb = "40,40,40";
+            borderRgb = "84,73,78";
+            foregroundRgb = "228,228,228";
+            foregroundBrightRgb = "245,245,245";
+            accentRgb = "146,167,203";
+            accentStrongRgb = "255,219,0";
+            successRgb = "66,220,0";
+            dangerRgb = "255,56,81";
+          };
         in {
           imports = [
             inputs.zen-browser.homeModules.beta
+            ./home-manager/md-preview.nix
             ./home-manager/niri.nix
             ./home-manager/minecraft.nix
+            ./home-manager/streaming.nix
           ];
 
           home.username = "jaren";
@@ -315,23 +439,108 @@ in
             pkgs.eza
             pkgs.yazi
             pkgs.ruff
+            pkgs.blender
+            pkgs.code-cursor
+            pkgs.cargo
+            pkgs.obsidian
             hermes
             hermesBootstrap
             hermesSetup
             hermesUpdate
-            inputs.rose-pine-hyprcursor.packages.${pkgs.system}.default
-            inputs.canvas-cli.packages.${pkgs.system}.default
+            inputs.rose-pine-hyprcursor.packages.${pkgs.stdenv.hostPlatform.system}.default
+            inputs.canvas-cli.packages.${pkgs.stdenv.hostPlatform.system}.default
           ];
 
           programs.mcsr = {
             enable = true;
-            ninjabrain.enable = true;
+            ninjabrain = {
+              enable = true;
+              jvmArgs = [ "-Dswing.defaultlaf=javax.swing.plaf.metal.MetalLookAndFeel" ];
+            };
             obs.enable = true;
-            waywall.enable = true;
+            waywall = {
+              enable = true;
+              configSource = ../config/waywall;
+            };
           };
+          programs.game-streaming.enable = true;
 
           programs.zed-editor.enable = true;
           programs.ghostty.enable = true;
+          programs.wofi = {
+            enable = true;
+            settings = {
+              allow_images = true;
+              allow_markup = true;
+              gtk_dark = true;
+              hide_scroll = true;
+              insensitive = true;
+              lines = 8;
+              matching = "fuzzy";
+              no_actions = true;
+              prompt = "run";
+              show = "drun";
+              term = "ghostty";
+              width = "38%";
+            };
+            style = ''
+              * {
+                font-family: "Inter";
+                font-size: 14px;
+              }
+
+              window {
+                background-color: rgba(${theme.backgroundRgb}, 0.94);
+                color: ${theme.foreground};
+              }
+
+              #outer-box {
+                margin: 12px;
+                padding: 14px;
+                border: 1px solid ${theme.border};
+                border-radius: 14px;
+                background-color: ${theme.background};
+              }
+
+              #input {
+                margin: 0 0 12px 0;
+                padding: 10px 12px;
+                border: 1px solid ${theme.border};
+                border-radius: 10px;
+                background-color: ${theme.backgroundAlt};
+                color: ${theme.foregroundBright};
+              }
+
+              #scroll {
+                margin: 0;
+              }
+
+              #entry {
+                margin: 4px 0;
+                padding: 10px 12px;
+                border: 1px solid transparent;
+                border-radius: 10px;
+                background-color: transparent;
+              }
+
+              #entry:selected {
+                background-color: rgba(${theme.accentRgb}, 0.16);
+                border-color: ${theme.accent};
+              }
+
+              #text {
+                color: ${theme.foreground};
+              }
+
+              #text:selected {
+                color: ${theme.foregroundBright};
+              }
+
+              #img {
+                margin-right: 10px;
+              }
+            '';
+          };
           programs.zen-browser.enable = true;
           programs.nushell = {
             enable = true;
@@ -393,9 +602,112 @@ in
 
           programs.ghostty.settings = {
             theme = "Gruber Darker";
+            window-decoration = "none";
+            window-padding-x = 12;
+            window-padding-y = 10;
             font-size = 15;
-            background-opacity = 0.8;
+            background-opacity = 0.9;
           };
+
+          qt = {
+            enable = true;
+            platformTheme.name = "kde";
+            style.name = "breeze";
+          };
+
+          home.file.".config/kdeglobals".text = ''
+            [General]
+            ColorScheme=GruberDarker
+            Name=GruberDarker
+
+            [KDE]
+            contrast=4
+            widgetStyle=Breeze
+
+            [Colors:Button]
+            BackgroundAlternate=${theme.backgroundAltRgb}
+            BackgroundNormal=${theme.backgroundAltRgb}
+            DecorationFocus=${theme.accentRgb}
+            DecorationHover=${theme.accentStrongRgb}
+            ForegroundActive=${theme.foregroundBrightRgb}
+            ForegroundInactive=${theme.borderRgb}
+            ForegroundLink=${theme.accentRgb}
+            ForegroundNegative=${theme.dangerRgb}
+            ForegroundNeutral=${theme.accentStrongRgb}
+            ForegroundNormal=${theme.foregroundRgb}
+            ForegroundPositive=${theme.successRgb}
+            ForegroundVisited=175,175,218
+
+            [Colors:Header]
+            BackgroundAlternate=${theme.backgroundAltRgb}
+            BackgroundNormal=${theme.backgroundAltRgb}
+            DecorationFocus=${theme.accentRgb}
+            DecorationHover=${theme.accentStrongRgb}
+            ForegroundActive=${theme.foregroundBrightRgb}
+            ForegroundInactive=${theme.borderRgb}
+            ForegroundLink=${theme.accentRgb}
+            ForegroundNegative=${theme.dangerRgb}
+            ForegroundNeutral=${theme.accentStrongRgb}
+            ForegroundNormal=${theme.foregroundRgb}
+            ForegroundPositive=${theme.successRgb}
+            ForegroundVisited=175,175,218
+
+            [Colors:Selection]
+            BackgroundAlternate=${theme.borderRgb}
+            BackgroundNormal=${theme.accentRgb}
+            DecorationFocus=${theme.accentRgb}
+            DecorationHover=${theme.accentStrongRgb}
+            ForegroundActive=${theme.foregroundBrightRgb}
+            ForegroundInactive=${theme.foregroundBrightRgb}
+            ForegroundLink=${theme.foregroundBrightRgb}
+            ForegroundNegative=${theme.foregroundBrightRgb}
+            ForegroundNeutral=${theme.foregroundBrightRgb}
+            ForegroundNormal=${theme.foregroundBrightRgb}
+            ForegroundPositive=${theme.foregroundBrightRgb}
+            ForegroundVisited=${theme.foregroundBrightRgb}
+
+            [Colors:Tooltip]
+            BackgroundAlternate=${theme.backgroundAltRgb}
+            BackgroundNormal=${theme.backgroundAltRgb}
+            DecorationFocus=${theme.accentRgb}
+            DecorationHover=${theme.accentStrongRgb}
+            ForegroundActive=${theme.foregroundBrightRgb}
+            ForegroundInactive=${theme.borderRgb}
+            ForegroundLink=${theme.accentRgb}
+            ForegroundNegative=${theme.dangerRgb}
+            ForegroundNeutral=${theme.accentStrongRgb}
+            ForegroundNormal=${theme.foregroundRgb}
+            ForegroundPositive=${theme.successRgb}
+            ForegroundVisited=175,175,218
+
+            [Colors:View]
+            BackgroundAlternate=${theme.backgroundAltRgb}
+            BackgroundNormal=${theme.backgroundRgb}
+            DecorationFocus=${theme.accentRgb}
+            DecorationHover=${theme.accentStrongRgb}
+            ForegroundActive=${theme.foregroundBrightRgb}
+            ForegroundInactive=${theme.borderRgb}
+            ForegroundLink=${theme.accentRgb}
+            ForegroundNegative=${theme.dangerRgb}
+            ForegroundNeutral=${theme.accentStrongRgb}
+            ForegroundNormal=${theme.foregroundRgb}
+            ForegroundPositive=${theme.successRgb}
+            ForegroundVisited=175,175,218
+
+            [Colors:Window]
+            BackgroundAlternate=${theme.backgroundAltRgb}
+            BackgroundNormal=${theme.backgroundRgb}
+            DecorationFocus=${theme.accentRgb}
+            DecorationHover=${theme.accentStrongRgb}
+            ForegroundActive=${theme.foregroundBrightRgb}
+            ForegroundInactive=${theme.borderRgb}
+            ForegroundLink=${theme.accentRgb}
+            ForegroundNegative=${theme.dangerRgb}
+            ForegroundNeutral=${theme.accentStrongRgb}
+            ForegroundNormal=${theme.foregroundRgb}
+            ForegroundPositive=${theme.successRgb}
+            ForegroundVisited=175,175,218
+          '';
 
           dconf.enable = true;
           dconf.settings = {
