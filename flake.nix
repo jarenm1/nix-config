@@ -40,6 +40,7 @@
         ./modules/flake/niri.nix
         # Main configuration module
         ./modules/nixos-config.nix
+        ./modules/nixos-laptop-config.nix
       ];
     };
 }

@@ -6,7 +6,7 @@ let
   pkgs = inputs.nixpkgs.legacyPackages.${system};
 in
 {
-  flake.nixosConfigurations.nixos = inputs.nixpkgs.lib.nixosSystem {
+  flake.nixosConfigurations.laptop = inputs.nixpkgs.lib.nixosSystem {
     inherit system;
     specialArgs = { inherit inputs; };
     modules = [
@@ -69,30 +69,14 @@ in
         };
       in {
         imports = [
-          ../hosts/nixos/hardware.nix
+          ../hosts/laptop/hardware.nix
         ];
 
         boot.loader.systemd-boot.enable = true;
         boot.loader.systemd-boot.configurationLimit = 5;
         boot.loader.efi.canTouchEfiVariables = true;
-        boot.blacklistedKernelModules = [ "nouveau" ];
-        boot.initrd.kernelModules = [
-          "nvidia"
-          "nvidia_modeset"
-          "nvidia_uvm"
-          "nvidia_drm"
-        ];
-        boot.kernelParams = [
-          "rd.driver.blacklist=nouveau"
-          "modprobe.blacklist=nouveau"
-          "nvidia-drm.modeset=1"
-        ];
-        boot.extraModprobeConfig = ''
-          blacklist nouveau
-          options nouveau modeset=0
-        '';
 
-        networking.hostName = "nixos";
+        networking.hostName = "laptop";
         networking.networkmanager.enable = true;
 
         time.timeZone = "America/Chicago";
@@ -120,13 +104,6 @@ in
         programs.ydotool.enable = true;
 
         nixpkgs.config.allowUnfree = true;
-        services.xserver.videoDrivers = [ "nvidia" ];
-        hardware.nvidia = {
-          modesetting.enable = true;
-          nvidiaSettings = true;
-          open = false;
-          package = config.boot.kernelPackages.nvidiaPackages.stable;
-        };
         hardware.graphics = {
           enable = true;
           enable32Bit = true;
