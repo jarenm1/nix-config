@@ -14,6 +14,9 @@ in
       ({ lib, pkgs, ... }: {
         nixpkgs.overlays = [
           inputs.niri.overlays.niri
+          (final: prev: {
+            pi-acp = final.callPackage ../pkgs/pi-acp.nix { };
+          })
         ];
       })
       
@@ -444,6 +447,7 @@ in
             pkgs.cargo
             pkgs.obsidian
             pkgs.pi-coding-agent
+            pkgs.pi-acp
             hermes
             hermesBootstrap
             hermesSetup
