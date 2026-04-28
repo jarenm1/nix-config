@@ -16,6 +16,16 @@ in
           inputs.niri.overlays.niri
           (final: prev: {
             pi-acp = final.callPackage ../pkgs/pi-acp.nix { };
+            master = import inputs.nixpkgs-master {
+              system = prev.stdenv.hostPlatform.system;
+              config = prev.config;
+              overlays = [
+                inputs.niri.overlays.niri
+                (masterFinal: _: {
+                  pi-acp = masterFinal.callPackage ../pkgs/pi-acp.nix { };
+                })
+              ];
+            };
           })
         ];
       })
@@ -116,13 +126,18 @@ in
         users.users.jaren = {
           isNormalUser = true;
           description = "jaren";
-          extraGroups = [ "networkmanager" "wheel" "ydotool" "uinput" ];
+          extraGroups = [ "networkmanager" "wheel" "ydotool" "uinput" "docker" ];
           shell = pkgs.nushell;
         };
 
         programs.ydotool.enable = true;
 
         nixpkgs.config.allowUnfree = true;
+        programs._1password.enable = true;
+        programs._1password-gui = {
+          enable = true;
+          polkitPolicyOwners = [ "jaren" ];
+        };
         services.xserver.videoDrivers = [ "nvidia" ];
         hardware.nvidia = {
           modesetting.enable = true;
@@ -169,11 +184,11 @@ in
         nix.settings.max-jobs = 8;
         nix.settings.trusted-users = lib.mkForce [ "root" "jaren" ];
         nix.settings.system-features = lib.mkForce [ "nixos-test" "benchmark" "big-parallel" "kvm" ];
-
         programs.steam.enable = true;
         programs.steam.gamescopeSession.enable = true;
 
         programs.gamemode.enable = true;
+        virtualisation.docker.enable = true;
         services.ratbagd.enable = true;
         services.tailscale.enable = true;
         services.openssh.enable = true;
@@ -202,15 +217,27 @@ in
             pkgs.xdg-desktop-portal-gnome
             pkgs.xdg-desktop-portal-gtk
           ];
-          config.niri = {
-            default = [
-              "gnome"
-              "gtk"
-            ];
-            "org.freedesktop.impl.portal.Access" = "gtk";
-            "org.freedesktop.impl.portal.FileChooser" = "gtk";
-            "org.freedesktop.impl.portal.Notification" = "gtk";
-            "org.freedesktop.impl.portal.Secret" = "gnome-keyring";
+          config = {
+            common = {
+              default = [
+                "gnome"
+                "gtk"
+              ];
+              "org.freedesktop.impl.portal.ScreenCast" = "gnome";
+              "org.freedesktop.impl.portal.Screenshot" = "gnome";
+            };
+            niri = {
+              default = [
+                "gnome"
+                "gtk"
+              ];
+              "org.freedesktop.impl.portal.Access" = "gtk";
+              "org.freedesktop.impl.portal.FileChooser" = "gtk";
+              "org.freedesktop.impl.portal.Notification" = "gtk";
+              "org.freedesktop.impl.portal.ScreenCast" = "gnome";
+              "org.freedesktop.impl.portal.Screenshot" = "gnome";
+              "org.freedesktop.impl.portal.Secret" = "gnome-keyring";
+            };
           };
         };
 
@@ -354,6 +381,28 @@ in
             '';
           };
 
+          discordCanary = pkgs.symlinkJoin {
+            name = "discord-canary-wayland";
+            paths = [ pkgs.discord-canary ];
+            nativeBuildInputs = [ pkgs.makeWrapper ];
+            postBuild = ''
+              wrapProgram $out/bin/DiscordCanary \
+                --add-flags "--enable-features=UseOzonePlatform,WebRTCPipeWireCapturer" \
+                --add-flags "--ozone-platform-hint=auto"
+            '';
+          };
+
+          vesktopWayland = pkgs.symlinkJoin {
+            name = "vesktop-wayland";
+            paths = [ pkgs.vesktop ];
+            nativeBuildInputs = [ pkgs.makeWrapper ];
+            postBuild = ''
+              wrapProgram $out/bin/vesktop \
+                --add-flags "--enable-features=UseOzonePlatform,WebRTCPipeWireCapturer" \
+                --add-flags "--ozone-platform-hint=auto"
+            '';
+          };
+
           theme = {
             background = "#181818";
             backgroundAlt = "#1f1f1f";
@@ -394,7 +443,6 @@ in
             pkgs.git
             pkgs.neovim
             pkgs.firefox
-            pkgs.zed-editor
             pkgs.wofi
             pkgs.ripgrep
             pkgs.ghostty
@@ -403,7 +451,7 @@ in
             pkgs.hyprcursor
             pkgs.cmake
             pkgs.just
-            pkgs.vesktop
+            vesktopWayland
             pkgs.hyprshot
             pkgs.grim
             pkgs.kdePackages.dolphin
@@ -438,7 +486,7 @@ in
             pkgs.codex-acp
             pkgs.piper
             pkgs.pavucontrol
-            pkgs.discord
+            discordCanary
             pkgs.eza
             pkgs.yazi
             pkgs.ruff
@@ -448,6 +496,9 @@ in
             pkgs.obsidian
             pkgs.pi-coding-agent
             pkgs.pi-acp
+            pkgs.dbeaver-bin
+            pkgs.cursor-cli
+            pkgs.zellij
             hermes
             hermesBootstrap
             hermesSetup
@@ -470,7 +521,27 @@ in
           };
           programs.game-streaming.enable = true;
 
-          programs.zed-editor.enable = true;
+          programs.zed-editor = {
+            enable = true;
+            package = pkgs.master.zed-editor;
+            userSettings = {
+              agent_servers = {
+                codex-acp = {
+                  type = "registry";
+                };
+                "Cursor Agent" = {
+                  type = "custom";
+                  command = lib.getExe pkgs.cursor-cli;
+                  args = [ "acp" ];
+                };
+                pi-acp = {
+                  type = "custom";
+                  command = lib.getExe pkgs.pi-acp;
+                  args = [ ];
+                };
+              };
+            };
+          };
           programs.ghostty.enable = true;
           programs.wofi = {
             enable = true;
