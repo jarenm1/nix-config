@@ -14,10 +14,16 @@ in
       ./nixos/base.nix
       ./nixos/fonts.nix
       ./nixos/gaming.nix
+      ./nixos/remote-build-client.nix
       ../hosts/laptop/hardware.nix
       inputs.home-manager.nixosModules.home-manager
       {
         networking.hostName = "laptop";
+        jaren.remoteBuilds = {
+          enable = true;
+          hostName = "nixos";
+          sshUser = "jaren";
+        };
 
         home-manager.useGlobalPkgs = true;
         home-manager.useUserPackages = true;

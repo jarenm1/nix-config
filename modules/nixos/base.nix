@@ -57,8 +57,7 @@
   nix.settings.max-jobs = 8;
   nix.settings.min-free = 5 * 1024 * 1024 * 1024;
   nix.settings.max-free = 20 * 1024 * 1024 * 1024;
-  nix.settings.trusted-users = lib.mkForce [ "root" "jaren" ];
-  nix.settings.system-features = lib.mkForce [ "nixos-test" "benchmark" "big-parallel" "kvm" ];
+  nix.settings.trusted-users = [ "jaren" ];
 
   nix.gc = {
     automatic = true;

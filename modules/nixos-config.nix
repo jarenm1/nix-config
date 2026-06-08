@@ -16,10 +16,12 @@ in
       ./nixos/gaming.nix
       ./nixos/desktop-nvidia.nix
       ./nixos/docker.nix
+      ./nixos/remote-builder-host.nix
       ../hosts/nixos/hardware.nix
       inputs.home-manager.nixosModules.home-manager
       ({ pkgs, ... }: {
         networking.hostName = "nixos";
+        jaren.remoteBuilderHost.enable = true;
 
         home-manager.useGlobalPkgs = true;
         home-manager.useUserPackages = true;
