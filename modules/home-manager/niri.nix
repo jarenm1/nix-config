@@ -1,8 +1,41 @@
 # Home Manager Niri Configuration
 # Focused on scroll and gesture support
-{ pkgs, lib, ... }: {
+{ config, pkgs, lib, ... }:
+let
+  quickshellVisualizer = config.programs.quickshellAudioVisualizer;
+  niriPortalBootstrap = pkgs.writeShellApplication {
+    name = "niri-portal-bootstrap";
+    runtimeInputs = [ pkgs.dbus pkgs.systemd ];
+    text = ''
+      dbus-update-activation-environment --systemd \
+        DISPLAY \
+        WAYLAND_DISPLAY \
+        XDG_CURRENT_DESKTOP \
+        XDG_SESSION_DESKTOP \
+        XDG_SESSION_TYPE \
+        NIRI_SOCKET
+
+      systemctl --user import-environment \
+        DISPLAY \
+        WAYLAND_DISPLAY \
+        XDG_CURRENT_DESKTOP \
+        XDG_SESSION_DESKTOP \
+        XDG_SESSION_TYPE \
+        NIRI_SOCKET
+
+      systemctl --user restart \
+        xdg-desktop-portal.service \
+        xdg-desktop-portal-gnome.service \
+        xdg-desktop-portal-gtk.service
+    '';
+  };
+in {
   programs.niri.config = ''
     spawn-at-startup "${pkgs.swaybg}/bin/swaybg" "-i" "/home/jaren/Downloads/background.jpg" "-m" "fill"
+    ${lib.optionalString quickshellVisualizer.enable ''
+    spawn-at-startup "${lib.getExe quickshellVisualizer.package}" "-p" "${config.xdg.configHome}/quickshell/${quickshellVisualizer.configName}"
+    ''}
+    spawn-at-startup "${lib.getExe niriPortalBootstrap}"
 
     xwayland-satellite {
       path "${lib.getExe pkgs.xwayland-satellite-stable}"
