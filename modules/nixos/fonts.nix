@@ -4,5 +4,6 @@
     roboto
     roboto-serif
     inter
+    nerd-fonts.commit-mono
   ];
 }

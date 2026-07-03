@@ -158,11 +158,12 @@ in
       pkgs.yazi
       pkgs.ruff
       pkgs.blender
+      pkgs.krita
       pkgs.code-cursor
       pkgs.cargo
       pkgs.obsidian
-      pkgs.pi-coding-agent
-      pkgs.pi-acp
+      pkgs.oh-my-pi
+      pkgs.t3code
       inputs.rose-pine-hyprcursor.packages.${pkgs.stdenv.hostPlatform.system}.default
       inputs.canvas-cli.packages.${pkgs.stdenv.hostPlatform.system}.default
     ] ++ cfg.extraPackages;
@@ -183,10 +184,10 @@ in
             command = lib.getExe pkgs.cursor-cli;
             args = [ "acp" ];
           };
-          pi-acp = {
+          oh-my-pi = {
             type = "custom";
-            command = lib.getExe pkgs.pi-acp;
-            args = [ ];
+            command = lib.getExe pkgs.oh-my-pi;
+            args = [ "acp" ];
           };
         };
       };
