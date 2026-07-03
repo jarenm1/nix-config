@@ -26,10 +26,6 @@
       url = "github:jarenm1/canvas-cli";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    codex-desktop-linux = {
-      url = "github:ilysenko/codex-desktop-linux";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     niri = {
       url = "github:sodiboo/niri-flake";
       inputs.nixpkgs.follows = "nixpkgs";
