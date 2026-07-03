@@ -5,20 +5,31 @@ let
 in
 {
   options.jaren.remoteBuilds = {
+    enable = lib.mkEnableOption "use another machine as a remote Nix builder";
+
     hostName = lib.mkOption {
-      type = with lib.types; nullOr str;
-      default = null;
+      type = lib.types.str;
+      default = "nixos";
       example = "desktop.tail1234.ts.net";
       description = ''
         Tailscale DNS name or IP address of the remote build machine.
-        Remote builds stay disabled until this is set.
       '';
     };
 
     sshUser = lib.mkOption {
       type = lib.types.str;
-      default = "builder";
+      default = "jaren";
       description = "SSH user used by the laptop to connect to the remote builder.";
+    };
+
+    sshKey = lib.mkOption {
+      type = with lib.types; nullOr str;
+      default = null;
+      example = "/root/.ssh/nix-builder";
+      description = ''
+        Optional private key used by the Nix daemon to SSH into the builder.
+        Leave null if root already has non-interactive SSH access to sshUser@hostName.
+      '';
     };
 
     knownHostNames = lib.mkOption {
@@ -38,10 +49,10 @@ in
       description = "Pinned SSH host key for the remote builder.";
     };
 
-    systems = lib.mkOption {
-      type = with lib.types; listOf str;
-      default = [ "x86_64-linux" ];
-      description = "Systems the remote builder can build.";
+    system = lib.mkOption {
+      type = lib.types.str;
+      default = "x86_64-linux";
+      description = "System type the remote builder can build.";
     };
 
     maxJobs = lib.mkOption {
@@ -58,22 +69,26 @@ in
 
     supportedFeatures = lib.mkOption {
       type = with lib.types; listOf str;
-      default = [ "big-parallel" ];
+      default = [
+        "nixos-test"
+        "benchmark"
+        "big-parallel"
+        "kvm"
+      ];
       description = "System features advertised by the remote builder.";
     };
 
     mandatoryFeatures = lib.mkOption {
       type = with lib.types; listOf str;
-      default = [ "big-parallel" ];
+      default = [ ];
       description = ''
-        Features that every derivation must request before it is sent to the
-        remote builder. Keeping big-parallel here reserves the desktop for
-        larger builds.
+        Features that every derivation must request before it can be sent to
+        the remote builder. Leave empty to let normal builds use the desktop.
       '';
     };
   };
 
-  config = lib.mkIf (cfg.hostName != null) {
+  config = lib.mkIf cfg.enable {
     assertions = [
       {
         assertion = cfg.knownHostPublicKey == null || cfg.knownHostNames != [ ];
@@ -84,15 +99,13 @@ in
     nix.distributedBuilds = true;
     nix.settings.builders-use-substitutes = true;
     nix.buildMachines = [
-      {
-        hostName = "nixos-1";
+      ({
+        inherit (cfg) hostName sshUser maxJobs speedFactor supportedFeatures mandatoryFeatures;
         protocol = "ssh-ng";
-        system = "x86_64-linux";
-        sshUser = "jaren";
-        maxJobs = 8;
-        speedFactor = 2;
-        supportedFeatures = [ "big-parallel" "kvm"]
-      }
+        inherit (cfg) system;
+      } // lib.optionalAttrs (cfg.sshKey != null) {
+        inherit (cfg) sshKey;
+      })
     ];
 
     programs.ssh.knownHosts = lib.mkIf (cfg.knownHostPublicKey != null) (

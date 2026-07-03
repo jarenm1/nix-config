@@ -1,3 +1,0 @@
-! include %S/evdev
-! model = symbols
-    *   = +mc(basic)

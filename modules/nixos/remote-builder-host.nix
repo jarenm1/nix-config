@@ -41,8 +41,8 @@ in
 
     supportedFeatures = lib.mkOption {
       type = with lib.types; listOf str;
-      default = [ "big-parallel" ];
-      description = "System features this machine can advertise to remote clients.";
+      default = [ ];
+      description = "Additional system features this machine can advertise to remote clients.";
     };
   };
 
@@ -72,7 +72,9 @@ in
 
     nix.settings.builders-use-substitutes = true;
     nix.settings.max-jobs = cfg.maxJobs;
-    nix.settings.trusted-users = lib.mkAfter [ cfg.user ];
-    nix.settings.system-features = lib.mkAfter cfg.supportedFeatures;
+    nix.settings.trusted-users = lib.mkIf cfg.createUser (lib.mkAfter [ cfg.user ]);
+    nix.settings.system-features = lib.mkIf (cfg.supportedFeatures != [ ]) (
+      lib.mkAfter cfg.supportedFeatures
+    );
   };
 }
