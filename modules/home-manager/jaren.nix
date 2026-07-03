@@ -68,7 +68,6 @@ let
 in
 {
   imports = [
-    inputs.codex-desktop-linux.homeManagerModules.default
     inputs.zen-browser.homeModules.beta
     ./md-preview.nix
     ./niri.nix
@@ -119,7 +118,6 @@ in
       pkgs.helix
       pkgs.vulkan-loader
       pkgs.wgsl-analyzer
-      pkgs.tmux
       pkgs.htop
       pkgs.acpi
       pkgs.mangohud
@@ -163,14 +161,11 @@ in
       pkgs.cargo
       pkgs.obsidian
       pkgs.oh-my-pi
-      pkgs.t3code
       inputs.rose-pine-hyprcursor.packages.${pkgs.stdenv.hostPlatform.system}.default
       inputs.canvas-cli.packages.${pkgs.stdenv.hostPlatform.system}.default
     ] ++ cfg.extraPackages;
 
     programs.quickshellAudioVisualizer.enable = true;
-    programs.codexDesktopLinux.enable = true;
-
     programs.zed-editor = {
       enable = true;
       package = pkgs.zed-editor;
@@ -335,6 +330,14 @@ in
       window-padding-y = 10;
       font-size = 15;
       background-opacity = 0.9;
+    };
+
+    programs.tmux = {
+      enable = true;
+      baseIndex = 1;
+      keyMode = "vi";
+      mouse = true;
+      terminal = "tmux-256color";
     };
 
     qt = {
