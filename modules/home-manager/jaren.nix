@@ -41,6 +41,22 @@ let
     package = pkgs.vesktop;
     executable = "vesktop";
   };
+  slackWayland = mkElectronWaylandPackage {
+    name = "slack-wayland";
+    package = pkgs.slack;
+    executable = "slack";
+  };
+  spotifyX11 = pkgs.symlinkJoin {
+    name = "spotify-x11";
+    paths = [ pkgs.spotify ];
+    nativeBuildInputs = [ pkgs.makeWrapper ];
+    postBuild = ''
+      wrapProgram "$out/bin/spotify" \
+        --set NIXOS_OZONE_WL 0 \
+        --set ELECTRON_OZONE_PLATFORM_HINT x11 \
+        --add-flags "--ozone-platform=x11"
+    '';
+  };
   masterCodex = pkgs.master.codex;
 
   theme = {
@@ -107,10 +123,12 @@ in
       pkgs.cmake
       pkgs.just
       vesktopWayland
+      slackWayland
       pkgs.hyprshot
       pkgs.grim
       pkgs.kdePackages.dolphin
       pkgs.gh
+      pkgs.awscli2
       pkgs.playerctl
       pkgs.wayland
       pkgs.wayland-protocols
@@ -122,7 +140,7 @@ in
       pkgs.acpi
       pkgs.mangohud
       pkgs.prismlauncher
-      pkgs.spotify
+      spotifyX11
       pkgs.wl-clipboard-rs
       pkgs.jujutsu
       pkgs.opencode
@@ -144,6 +162,7 @@ in
       pkgs.fastfetch
       pkgs.zathura
       pkgs.basedpyright
+      pkgs.obs-studio
       masterCodex
       pkgs.codex-acp
       pkgs.piper
@@ -161,6 +180,7 @@ in
       pkgs.cargo
       pkgs.obsidian
       pkgs.oh-my-pi
+      pkgs.t4-code
       inputs.rose-pine-hyprcursor.packages.${pkgs.stdenv.hostPlatform.system}.default
       inputs.canvas-cli.packages.${pkgs.stdenv.hostPlatform.system}.default
     ] ++ cfg.extraPackages;

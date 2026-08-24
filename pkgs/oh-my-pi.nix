@@ -1,65 +1,41 @@
 { lib
-, buildNpmPackage
+, stdenvNoCC
 , fetchurl
-, makeWrapper
-, bun
+, buildFHSEnv
 , fd
 , ripgrep
-, versionCheckHook
-, writableTmpDirAsHomeHook
 }:
 
-buildNpmPackage rec {
-  pname = "oh-my-pi";
-  version = "16.1.23";
+let
+  version = "16.5.2-appserver-4";
 
   src = fetchurl {
-    url = "https://registry.npmjs.org/@oh-my-pi/pi-coding-agent/-/pi-coding-agent-${version}.tgz";
-    hash = "sha256-AkS8QRFzyh/4+2gMP+rN23pLYN9upuuSpzjbgHcj0ek=";
+    url = "https://github.com/lyc-aon/oh-my-pi/releases/download/t4code-${version}/omp-linux-x64";
+    hash = "sha256-+aMyizKi9JxKZ0lAYUPhP8b4+YwJSGWxGdXGMIDr01E=";
   };
 
-  sourceRoot = "package";
-
-  postPatch = ''
-    cp ${./oh-my-pi-package-lock.json} package-lock.json
-  '';
-
-  npmDepsHash = "sha256-L1ed2P2RMLRSRl6KyPspaQM+KV8jbs9Tr84dCtaSDxM=";
-  dontNpmBuild = true;
-  npmRebuildFlags = [ "--ignore-scripts" ];
-
-  nativeBuildInputs = [ makeWrapper ];
-
-  installPhase = ''
-    runHook preInstall
-
-    local packageOut="$out/lib/node_modules/@oh-my-pi/pi-coding-agent"
-    mkdir -p "$packageOut" "$out/bin"
-    cp -R . "$packageOut"
-
-    makeWrapper ${lib.getExe bun} "$out/bin/omp" \
-      --add-flags "$packageOut/dist/cli.js" \
-      --prefix PATH : ${lib.makeBinPath [ fd ripgrep ]}
-
-    runHook postInstall
-  '';
-
-  doInstallCheck = true;
-  nativeInstallCheckInputs = [
-    writableTmpDirAsHomeHook
-    versionCheckHook
-  ];
-  versionCheckKeepEnvironment = [ "HOME" ];
-  versionCheckProgram = "${placeholder "out"}/bin/omp";
-  versionCheckProgramArg = "--version";
+  unwrapped = stdenvNoCC.mkDerivation {
+    pname = "oh-my-pi-unwrapped";
+    inherit version src;
+    dontUnpack = true;
+    installPhase = ''
+      install -m 755 -D $src $out/bin/omp
+    '';
+  };
+in
+buildFHSEnv {
+  name = "omp";
+  runScript = "${unwrapped}/bin/omp";
+  targetPkgs = _: [ fd ripgrep ];
 
   meta = {
-    description = "Opinionated Pi coding agent configuration";
+    description = "Opinionated Pi coding agent with T4 Code appserver support";
     homepage = "https://omp.sh";
-    downloadPage = "https://www.npmjs.com/package/@oh-my-pi/pi-coding-agent";
-    changelog = "https://github.com/can1357/oh-my-pi/blob/main/packages/coding-agent/CHANGELOG.md";
+    downloadPage = "https://github.com/lyc-aon/oh-my-pi/releases/tag/t4code-${version}";
+    changelog = "https://github.com/lyc-aon/oh-my-pi/releases/tag/t4code-${version}";
     license = lib.licenses.mit;
     mainProgram = "omp";
-    platforms = lib.platforms.linux ++ lib.platforms.darwin;
+    platforms = [ "x86_64-linux" ];
+    sourceProvenance = with lib.sourceTypes; [ binaryNativeCode ];
   };
 }
