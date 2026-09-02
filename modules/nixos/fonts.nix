@@ -5,5 +5,6 @@
     roboto-serif
     inter
     nerd-fonts.commit-mono
+    comic-mono
   ];
 }

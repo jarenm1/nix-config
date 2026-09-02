@@ -1,63 +1,6 @@
-{ inputs, lib, pkgs, config, ... }:
+{ inputs, lib, ... }:
 let
-  cfg = config.jaren.home;
 
-  mkElectronWaylandPackage =
-    { name, package, executable }:
-    pkgs.symlinkJoin {
-      inherit name;
-      paths = [ package ];
-      nativeBuildInputs = [ pkgs.makeWrapper ];
-      postBuild = ''
-        wrapProgram "$out/bin/${executable}" \
-          --set NIXOS_OZONE_WL 1 \
-          --set ELECTRON_OZONE_PLATFORM_HINT wayland \
-          --add-flags "--enable-features=UseOzonePlatform,WaylandWindowDecorations,WebRTCPipeWireCapturer" \
-          --add-flags "--ozone-platform=wayland"
-      '';
-    };
-
-  hasMasterDiscord = pkgs ? master && pkgs.master ? discord;
-  hasMasterDiscordCanary = pkgs ? master && builtins.hasAttr "discord-canary" pkgs.master;
-  discordBasePackage =
-    if hasMasterDiscord then
-      pkgs.master.discord
-    else if hasMasterDiscordCanary then
-      pkgs.master."discord-canary"
-    else
-      pkgs.discord-canary;
-  discordExecutable =
-    if hasMasterDiscord then
-      "Discord"
-    else
-      "DiscordCanary";
-  discordWayland = mkElectronWaylandPackage {
-    name = "discord-wayland";
-    package = discordBasePackage;
-    executable = discordExecutable;
-  };
-  vesktopWayland = mkElectronWaylandPackage {
-    name = "vesktop-wayland";
-    package = pkgs.vesktop;
-    executable = "vesktop";
-  };
-  slackWayland = mkElectronWaylandPackage {
-    name = "slack-wayland";
-    package = pkgs.slack;
-    executable = "slack";
-  };
-  spotifyX11 = pkgs.symlinkJoin {
-    name = "spotify-x11";
-    paths = [ pkgs.spotify ];
-    nativeBuildInputs = [ pkgs.makeWrapper ];
-    postBuild = ''
-      wrapProgram "$out/bin/spotify" \
-        --set NIXOS_OZONE_WL 0 \
-        --set ELECTRON_OZONE_PLATFORM_HINT x11 \
-        --add-flags "--ozone-platform=x11"
-    '';
-  };
-  masterCodex = pkgs.master.codex;
 
   theme = {
     background = "#181818";
@@ -84,7 +27,10 @@ let
 in
 {
   imports = [
-    inputs.zen-browser.homeModules.beta
+    ./packages.nix
+    ./shell.nix
+    ./editors.nix
+    ./browsers.nix
     ./md-preview.nix
     ./niri.nix
     ./quickshell.nix
@@ -110,103 +56,8 @@ in
       XDG_SESSION_TYPE = "wayland";
     };
 
-    home.packages = [
-      pkgs.git
-      pkgs.neovim
-      pkgs.firefox
-      pkgs.wofi
-      pkgs.ripgrep
-      pkgs.ghostty
-      pkgs.nixd
-      pkgs.hyprpaper
-      pkgs.hyprcursor
-      pkgs.cmake
-      pkgs.just
-      vesktopWayland
-      slackWayland
-      pkgs.hyprshot
-      pkgs.grim
-      pkgs.kdePackages.dolphin
-      pkgs.gh
-      pkgs.awscli2
-      pkgs.playerctl
-      pkgs.wayland
-      pkgs.wayland-protocols
-      pkgs.libxkbcommon
-      pkgs.helix
-      pkgs.vulkan-loader
-      pkgs.wgsl-analyzer
-      pkgs.htop
-      pkgs.acpi
-      pkgs.mangohud
-      pkgs.prismlauncher
-      spotifyX11
-      pkgs.wl-clipboard-rs
-      pkgs.jujutsu
-      pkgs.opencode
-      pkgs.claude-code
-      pkgs.unzip
-      pkgs.gcc
-      pkgs.clang-tools
-      pkgs.ocaml
-      pkgs.dune_3
-      pkgs.opam
-      pkgs.ocamlPackages.findlib
-      pkgs.ocamlPackages.ocaml-lsp
-      pkgs.ocamlPackages.ocamlformat
-      pkgs.ocamlPackages.utop
-      pkgs.md-tui
-      pkgs.uv
-      pkgs.python3
-      pkgs.libreoffice
-      pkgs.fastfetch
-      pkgs.zathura
-      pkgs.basedpyright
-      pkgs.obs-studio
-      masterCodex
-      pkgs.codex-acp
-      pkgs.piper
-      pkgs.pavucontrol
-      pkgs.v4l-utils
-      pkgs.guvcview
-      pkgs.master.ani-cli
-      discordWayland
-      pkgs.eza
-      pkgs.yazi
-      pkgs.ruff
-      pkgs.blender
-      pkgs.krita
-      pkgs.code-cursor
-      pkgs.cargo
-      pkgs.obsidian
-      pkgs.oh-my-pi
-      pkgs.t4-code
-      inputs.rose-pine-hyprcursor.packages.${pkgs.stdenv.hostPlatform.system}.default
-      inputs.canvas-cli.packages.${pkgs.stdenv.hostPlatform.system}.default
-    ] ++ cfg.extraPackages;
 
     programs.quickshellAudioVisualizer.enable = true;
-    programs.zed-editor = {
-      enable = true;
-      package = pkgs.zed-editor;
-      userSettings = {
-        agent_servers = {
-          codex-acp = {
-            type = "registry";
-          };
-          "Cursor Agent" = {
-            type = "custom";
-            command = lib.getExe pkgs.cursor-cli;
-            args = [ "acp" ];
-          };
-          oh-my-pi = {
-            type = "custom";
-            command = lib.getExe pkgs.oh-my-pi;
-            args = [ "acp" ];
-          };
-        };
-      };
-    };
 
     programs.ghostty.enable = true;
     programs.wofi = {
@@ -284,81 +135,18 @@ in
       '';
     };
 
-    programs.zen-browser.enable = true;
-    programs.nushell = {
-      enable = true;
-      package = null;
-      settings = {
-        show_banner = false;
-      };
-    };
-    programs.direnv = {
-      enable = true;
-      enableNushellIntegration = true;
-      nix-direnv.enable = true;
-    };
-    programs.zoxide = {
-      enable = true;
-      enableNushellIntegration = true;
-    };
-    programs.atuin = {
-      enable = true;
-      enableNushellIntegration = true;
-    };
-    programs.starship = {
-      enable = true;
-      enableNushellIntegration = true;
-      settings = {
-        add_newline = false;
-        command_timeout = 1000;
-        format = "$directory$git_branch$nix_shell$character";
-        right_format = "$battery$time";
-        line_break.disabled = true;
-        character = {
-          success_symbol = "[➜](bold green)";
-          error_symbol = "[➜](bold red)";
-        };
-        directory = {
-          truncation_length = 3;
-          truncate_to_repo = false;
-        };
-        battery = {
-          disabled = false;
-          format = "[$symbol$percentage]($style) ";
-          display = [
-            {
-              threshold = 100;
-              style = "dimmed white";
-            }
-          ];
-        };
-        git_branch.symbol = " ";
-        nix_shell.symbol = " ";
-        time = {
-          disabled = false;
-          format = "[$time]($style)";
-          time_format = "%m/%d %R";
-          style = "dimmed white";
-        };
-      };
-    };
 
     programs.ghostty.settings = {
       theme = "Gruber Darker";
       window-decoration = "none";
       window-padding-x = 12;
       window-padding-y = 10;
-      font-size = 15;
+      font-size = 16;
+      adjust-cell-height = "30%";
       background-opacity = 0.9;
+      font-family = "Comic Mono";
     };
 
-    programs.tmux = {
-      enable = true;
-      baseIndex = 1;
-      keyMode = "vi";
-      mouse = true;
-      terminal = "tmux-256color";
-    };
 
     qt = {
       enable = true;
@@ -467,15 +255,5 @@ in
       };
     };
 
-    programs.helix.enable = true;
-    programs.helix.settings = {
-      theme = "gruber-darker";
-      editor = {
-        line-number = "relative";
-      };
-      editor.cursor-shape = {
-        insert = "bar";
-      };
-    };
   };
 }

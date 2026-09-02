@@ -10,8 +10,10 @@
           hash = "sha256-lR7iruhV8IWVruxiJSJqKY0/6oOj3NZGXAnLzN9+hI8=";
         };
       });
-      oh-my-pi = final.callPackage ../../pkgs/oh-my-pi.nix { };
       t4-code = final.callPackage ../../pkgs/t4-code.nix { };
+      sober = final.writeShellScriptBin "sober" ''
+        exec flatpak run org.vinegarhq.Sober "$@"
+      '';
       master = import inputs.nixpkgs-master {
         system = prev.stdenv.hostPlatform.system;
         config = prev.config;

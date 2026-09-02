@@ -9,6 +9,8 @@
     # Use the newer already-locked niri build from the flake instead.
     package = pkgs.niri-unstable;
   };
+
+  services.gnome.at-spi2-core.enable = true;
   
   # Note: Hyprland is kept enabled separately
   # programs.hyprland.enable = true;  # managed in hyprland.nix
