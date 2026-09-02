@@ -30,7 +30,7 @@ let
     '';
   };
 in {
-  programs.niri.config = ''
+  xdg.configFile."niri/config.kdl".text = ''
     spawn-at-startup "${pkgs.swaybg}/bin/swaybg" "-i" "/home/jaren/Downloads/background.jpg" "-m" "fill"
     ${lib.optionalString quickshellVisualizer.enable ''
     spawn-at-startup "${lib.getExe quickshellVisualizer.package}" "-p" "${config.xdg.configHome}/quickshell/${quickshellVisualizer.configName}"
