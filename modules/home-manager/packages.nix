@@ -76,6 +76,7 @@ in
     pkgs.jujutsu
     pkgs.opencode
     pkgs.claude-code
+    pkgs.herdr
     pkgs.unzip
     pkgs.gcc
     pkgs.clang-tools
@@ -113,6 +114,7 @@ in
     (inputs.oh-my-pi.packages.${pkgs.stdenv.hostPlatform.system}.default.override {
       withWaylandScreencast = true;
     })
+    inputs.autolith.packages.${pkgs.stdenv.hostPlatform.system}.default
     pkgs.t4-code
     inputs.rose-pine-hyprcursor.packages.${pkgs.stdenv.hostPlatform.system}.default
     inputs.canvas-cli.packages.${pkgs.stdenv.hostPlatform.system}.default
