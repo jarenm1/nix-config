@@ -33,6 +33,7 @@ in
     ./browsers.nix
     ./md-preview.nix
     ./niri.nix
+    ./quickshell.nix
   ];
 
   options.jaren.home.extraPackages = lib.mkOption {
@@ -58,6 +59,7 @@ in
 
 
     programs.ghostty.enable = true;
+    programs.quickshellClock.enable = true;
     programs.wofi = {
       enable = true;
       settings = {

@@ -114,8 +114,8 @@ in
     (inputs.oh-my-pi.packages.${pkgs.stdenv.hostPlatform.system}.default.override {
       withWaylandScreencast = true;
     })
-    inputs.autolith.packages.${pkgs.stdenv.hostPlatform.system}.default
     pkgs.t4-code
+    pkgs.tern
     inputs.rose-pine-hyprcursor.packages.${pkgs.stdenv.hostPlatform.system}.default
     inputs.canvas-cli.packages.${pkgs.stdenv.hostPlatform.system}.default
   ] ++ cfg.extraPackages;

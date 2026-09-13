@@ -11,9 +11,16 @@
         };
       });
       t4-code = final.callPackage ../../pkgs/t4-code.nix { };
+      tern = final.callPackage ../../pkgs/tern.nix { };
       sober = final.writeShellScriptBin "sober" ''
-        exec flatpak run org.vinegarhq.Sober "$@"
+        exec ${final.gamemode}/bin/gamemoderun ${final.flatpak}/bin/flatpak run --system --file-forwarding org.vinegarhq.Sober "$@"
       '';
+      vinegar = final.writeShellScriptBin "vinegar" ''
+        exec ${final.gamemode}/bin/gamemoderun ${final.flatpak}/bin/flatpak run --system --file-forwarding org.vinegarhq.Vinegar "$@"
+      '';
+      herdr = prev.herdr.overrideAttrs (old: {
+        NIX_LDFLAGS = (old.NIX_LDFLAGS or "") + " --no-eh-frame-hdr";
+      });
       master = import inputs.nixpkgs-master {
         system = prev.stdenv.hostPlatform.system;
         config = prev.config;

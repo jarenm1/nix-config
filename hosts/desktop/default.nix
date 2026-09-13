@@ -4,6 +4,7 @@
 
   home-manager.users.jaren.jaren.home.extraPackages = with pkgs; [
     ardour
+    blockbench
     surge-XT
     carla
     qpwgraph
