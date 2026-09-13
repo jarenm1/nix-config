@@ -4,16 +4,12 @@
     enable = true;
     package = null;
     settings.show_banner = false;
-    # Atuin gives Ctrl-R and Up the same name; rename before Nu loads them.
     extraConfig = lib.mkOrder 2000 ''
       source ${
         pkgs.runCommand "atuin-nushell-config.nu"
           { nativeBuildInputs = [ pkgs.writableTmpDirAsHomeHook ]; }
           ''
             ${lib.getExe config.programs.atuin.package} init nu ${lib.escapeShellArgs config.programs.atuin.flags} > "$out"
-            substituteInPlace "$out" \
-              --replace-fail $'name: atuin\n            modifier: control' $'name: atuin_search\n            modifier: control' \
-              --replace-fail $'name: atuin\n            modifier: none' $'name: atuin_up\n            modifier: none'
           ''
       }
     '';
