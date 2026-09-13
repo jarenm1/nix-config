@@ -28,8 +28,6 @@
       url = "github:can1357/oh-my-pi";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    # Autolith requires its own pinned SBCL and matching Lisp package set.
-    autolith.url = "github:lambda-symbolics/autolith";
     niri = {
       url = "github:epireyn/niri-flake";
       inputs.nixpkgs.follows = "nixpkgs";
