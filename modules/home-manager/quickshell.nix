@@ -30,7 +30,7 @@ in
 
     framerate = lib.mkOption {
       type = lib.types.ints.positive;
-      default = 60;
+      default = 24;
       description = "CAVA output framerate.";
     };
   };
