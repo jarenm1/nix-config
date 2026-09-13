@@ -2,7 +2,6 @@
 # Focused on scroll and gesture support
 { config, pkgs, lib, ... }:
 let
-  quickshellVisualizer = config.programs.quickshellAudioVisualizer;
   niriPortalBootstrap = pkgs.writeShellApplication {
     name = "niri-portal-bootstrap";
     runtimeInputs = [ pkgs.dbus pkgs.systemd ];
@@ -32,9 +31,6 @@ let
 in {
   xdg.configFile."niri/config.kdl".text = ''
     spawn-at-startup "${pkgs.swaybg}/bin/swaybg" "-i" "/home/jaren/Downloads/background.jpg" "-m" "fill"
-    ${lib.optionalString quickshellVisualizer.enable ''
-    spawn-at-startup "${lib.getExe quickshellVisualizer.package}" "-p" "${config.xdg.configHome}/quickshell/${quickshellVisualizer.configName}"
-    ''}
     spawn-at-startup "${lib.getExe niriPortalBootstrap}"
 
     xwayland-satellite {

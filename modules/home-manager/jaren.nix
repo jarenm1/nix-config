@@ -33,7 +33,6 @@ in
     ./browsers.nix
     ./md-preview.nix
     ./niri.nix
-    ./quickshell.nix
   ];
 
   options.jaren.home.extraPackages = lib.mkOption {
@@ -57,7 +56,6 @@ in
     };
 
 
-    programs.quickshellAudioVisualizer.enable = true;
 
     programs.ghostty.enable = true;
     programs.wofi = {
