@@ -59,7 +59,7 @@ in
 
 
     programs.ghostty.enable = true;
-    programs.quickshellClock.enable = true;
+    programs.quickshellBar.enable = true;
     programs.wofi = {
       enable = true;
       settings = {

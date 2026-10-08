@@ -1,21 +1,21 @@
 { config, lib, pkgs, ... }:
 
 let
-  cfg = config.programs.quickshellClock;
+  cfg = config.programs.quickshellBar;
 in
 {
-  options.programs.quickshellClock = {
-    enable = lib.mkEnableOption "a Quickshell corner clock overlay";
+  options.programs.quickshellBar = {
+    enable = lib.mkEnableOption "a Quickshell top bar";
 
     package = lib.mkOption {
       type = lib.types.package;
       default = pkgs.quickshell;
-      description = "Quickshell package used to run the clock.";
+      description = "Quickshell package used to run the bar.";
     };
 
     configName = lib.mkOption {
       type = lib.types.str;
-      default = "corner-clock";
+      default = "top-bar";
       description = "Named Quickshell config directory under ~/.config/quickshell.";
     };
   };
@@ -27,6 +27,8 @@ in
       import QtQuick
       import Quickshell
       import Quickshell.Wayland
+      import Quickshell.Io
+      import Quickshell.Services.UPower
 
       ShellRoot {
         id: root
@@ -36,191 +38,283 @@ in
           precision: SystemClock.Seconds
         }
 
+        FileView {
+          id: sysfsBat0Cap
+          path: "/sys/class/power_supply/BAT0/capacity"
+          printErrors: false
+        }
+
+        FileView {
+          id: sysfsBat0Stat
+          path: "/sys/class/power_supply/BAT0/status"
+          printErrors: false
+        }
+
+        FileView {
+          id: sysfsBat1Cap
+          path: "/sys/class/power_supply/BAT1/capacity"
+          printErrors: false
+        }
+
+        FileView {
+          id: sysfsBat1Stat
+          path: "/sys/class/power_supply/BAT1/status"
+          printErrors: false
+        }
+
+        readonly property var upowerDev: {
+          if (UPower.displayDevice && UPower.displayDevice.isPresent && (UPower.displayDevice.isLaptopBattery || UPower.displayDevice.type === UPowerDeviceType.Battery || UPower.displayDevice.type === 2)) {
+            return UPower.displayDevice;
+          }
+          if (UPower.devices) {
+            for (let i = 0; i < (UPower.devices.values ? UPower.devices.values.length : 0); i++) {
+              let d = UPower.devices.values[i];
+              if (d && d.isPresent && (d.isLaptopBattery || d.type === UPowerDeviceType.Battery || d.type === 2)) {
+                return d;
+              }
+            }
+          }
+          return null;
+        }
+
+        readonly property bool hasSysfsBat: (sysfsBat0Cap.loaded && sysfsBat0Cap.text().trim().length > 0) ||
+                                           (sysfsBat1Cap.loaded && sysfsBat1Cap.text().trim().length > 0)
+
+        readonly property bool hasBattery: upowerDev !== null || hasSysfsBat
+
+        readonly property int batteryPct: {
+          if (upowerDev) {
+            let p = upowerDev.percentage;
+            if (p <= 1.0 && p > 0.0) return Math.round(p * 100);
+            return Math.round(p);
+          }
+          if (sysfsBat0Cap.loaded && sysfsBat0Cap.text().trim().length > 0) {
+            return parseInt(sysfsBat0Cap.text().trim(), 10) || 0;
+          }
+          if (sysfsBat1Cap.loaded && sysfsBat1Cap.text().trim().length > 0) {
+            return parseInt(sysfsBat1Cap.text().trim(), 10) || 0;
+          }
+          return 0;
+        }
+
+        readonly property bool isCharging: {
+          if (upowerDev) {
+            return upowerDev.state === UPowerDeviceState.Charging || upowerDev.state === 1 ||
+                   upowerDev.state === UPowerDeviceState.PendingCharge || upowerDev.state === 5;
+          }
+          if (sysfsBat0Stat.loaded && sysfsBat0Stat.text().trim().toLowerCase() === "charging") return true;
+          if (sysfsBat1Stat.loaded && sysfsBat1Stat.text().trim().toLowerCase() === "charging") return true;
+          return false;
+        }
+
+        component AnimatedDigit: Item {
+          id: digit
+          property string value: ""
+          property color textColor: "#f0f0f0"
+          property font font
+
+          implicitWidth: measureText.implicitWidth
+          implicitHeight: measureText.implicitHeight
+          clip: true
+
+          Text {
+            id: measureText
+            visible: false
+            text: digit.value.length > 0 ? digit.value : "0"
+            font: digit.font
+          }
+
+          property string curVal: value
+          property string prevVal: ""
+
+          onValueChanged: {
+            if (value !== curVal) {
+              prevVal = curVal;
+              curVal = value;
+              anim.restart();
+            }
+          }
+
+          Text {
+            id: prevTextItem
+            text: digit.prevVal
+            color: digit.textColor
+            font: digit.font
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.verticalCenter: parent.verticalCenter
+            opacity: 0
+          }
+
+          Text {
+            id: curTextItem
+            text: digit.curVal
+            color: digit.textColor
+            font: digit.font
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.verticalCenter: parent.verticalCenter
+            opacity: 1
+          }
+
+          ParallelAnimation {
+            id: anim
+            NumberAnimation {
+              target: prevTextItem
+              property: "anchors.verticalCenterOffset"
+              from: 0
+              to: -digit.height * 0.7
+              duration: 200
+              easing.type: Easing.OutCubic
+            }
+            NumberAnimation {
+              target: prevTextItem
+              property: "opacity"
+              from: 1
+              to: 0
+              duration: 150
+            }
+            NumberAnimation {
+              target: curTextItem
+              property: "anchors.verticalCenterOffset"
+              from: digit.height * 0.7
+              to: 0
+              duration: 200
+              easing.type: Easing.OutCubic
+            }
+            NumberAnimation {
+              target: curTextItem
+              property: "opacity"
+              from: 0
+              to: 1
+              duration: 150
+            }
+          }
+        }
+
         Variants {
           model: Quickshell.screens
 
-          Scope {
-            id: scope
-
+          PanelWindow {
+            id: bar
             property var modelData
-            property bool expanded: hoverArea.containsMouse || retractDelay.running
+            screen: modelData
 
-            Timer {
-              id: retractDelay
-              interval: 350
+            anchors {
+              top: true
+              left: true
+              right: true
             }
 
-            // The only input surface: a small corner square.
-            PanelWindow {
-              id: trigger
+            implicitHeight: 26
+            color: "#161616"
 
-              screen: scope.modelData
-              color: "transparent"
-              focusable: false
-              exclusionMode: ExclusionMode.Ignore
-              exclusiveZone: 0
-              surfaceFormat.opaque: false
+            WlrLayershell.namespace: "top-bar"
+            WlrLayershell.layer: WlrLayer.Top
 
-              WlrLayershell.namespace: "corner-clock-trigger"
-              WlrLayershell.layer: WlrLayer.Top
-
-              anchors {
-                bottom: true
-                right: true
-              }
-              implicitWidth: 56
-              implicitHeight: 56
-
-              MouseArea {
-                id: hoverArea
-                anchors.fill: parent
-                hoverEnabled: true
-                acceptedButtons: Qt.NoButton
-
-                onContainsMouseChanged: {
-                  if (containsMouse) {
-                    retractDelay.stop()
-                  } else {
-                    retractDelay.restart()
-                  }
-                }
-              }
-
-              // Subtle hint that the corner is live.
-              Rectangle {
-                anchors.bottom: parent.bottom
-                anchors.right: parent.right
-                anchors.bottomMargin: 7
-                anchors.rightMargin: 7
-                width: 26
-                height: 3
-                radius: 1.5
-                color: Qt.rgba(146 / 255, 167 / 255, 203 / 255, 0.4)
-                opacity: scope.expanded ? 0 : 1
-                Behavior on opacity { NumberAnimation { duration: 150 } }
-              }
+            // Bottom border separator
+            Rectangle {
+              anchors.left: parent.left
+              anchors.right: parent.right
+              anchors.bottom: parent.bottom
+              height: 1
+              color: "#262626"
             }
 
-            // Clock pill. Empty mask: always fully click-through.
-            PanelWindow {
-              id: pillWin
+            Item {
+              anchors.fill: parent
+              anchors.leftMargin: 16
+              anchors.rightMargin: 16
 
-              screen: scope.modelData
-              color: "transparent"
-              focusable: false
-              exclusionMode: ExclusionMode.Ignore
-              exclusiveZone: 0
-              surfaceFormat.opaque: false
-              mask: Region {}
+              // Center: Date & Animated Time (hh:mm:ss)
+              Row {
+                anchors.centerIn: parent
+                spacing: 8
 
-              WlrLayershell.namespace: "corner-clock"
-              WlrLayershell.layer: WlrLayer.Top
-
-              anchors {
-                bottom: true
-                right: true
-              }
-              margins {
-                bottom: 18
-                right: 18
-              }
-              implicitWidth: pill.implicitWidth
-              implicitHeight: pill.implicitHeight
-
-              Rectangle {
-                id: pill
-
-                width: parent.width
-                height: parent.height
-                y: scope.expanded ? 0 : parent.height + 4
-                opacity: scope.expanded ? 1 : 0
-
-                Behavior on y {
-                  NumberAnimation {
-                    duration: 220
-                    easing.type: Easing.OutCubic
-                  }
+                Text {
+                  text: Qt.formatDateTime(clock.date, "ddd, MMM d")
+                  color: "#8e8e8e"
+                  font.pixelSize: 12
+                  font.family: "Comic Mono, monospace"
+                  anchors.verticalCenter: parent.verticalCenter
                 }
-                Behavior on opacity { NumberAnimation { duration: 160 } }
 
-                implicitWidth: content.implicitWidth + 40
-                implicitHeight: content.implicitHeight + 30
-                radius: 14
-                color: Qt.rgba(24 / 255, 24 / 255, 24 / 255, 0.88)
-                border.color: Qt.rgba(146 / 255, 167 / 255, 203 / 255, 0.30)
-                border.width: 1
+                Text {
+                  text: "·"
+                  color: "#444444"
+                  font.pixelSize: 12
+                  font.bold: true
+                  anchors.verticalCenter: parent.verticalCenter
+                }
 
-                Column {
-                  id: content
+                Row {
+                  id: digitsRow
+                  anchors.verticalCenter: parent.verticalCenter
+                  spacing: 0
 
-                  anchors.centerIn: parent
-                  anchors.verticalCenterOffset: -2
-                  spacing: 1
+                  property string timeStr: Qt.formatDateTime(clock.date, "hh:mm:ss")
 
-                  Row {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    spacing: 7
-
-                    Text {
-                      id: timeText
-                      text: Qt.formatDateTime(clock.date, "hh:mm")
-                      color: "#f5f5f5"
-                      font.family: "Comic Mono"
-                      font.pixelSize: 38
+                  Repeater {
+                    model: 8
+                    AnimatedDigit {
+                      value: digitsRow.timeStr.length === 8 ? digitsRow.timeStr.charAt(index) : ""
+                      textColor: "#f0f0f0"
+                      font.pixelSize: 12
                       font.bold: true
+                      font.family: "Comic Mono, monospace"
+                      anchors.verticalCenter: parent.verticalCenter
                     }
-
-                    Text {
-                      text: Qt.formatDateTime(clock.date, "ss")
-                      color: "#92a7cb"
-                      font.family: "Comic Mono"
-                      font.pixelSize: 15
-                      anchors.baseline: timeText.baseline
-                    }
-                  }
-
-                  Text {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    text: Qt.formatDateTime(clock.date, "ddd · MMM d")
-                    color: "#8f8f8f"
-                    font.family: "Comic Mono"
-                    font.pixelSize: 13
                   }
                 }
+              }
 
-                Rectangle {
-                  anchors.left: parent.left
-                  anchors.right: parent.right
-                  anchors.bottom: parent.bottom
-                  anchors.leftMargin: 14
-                  anchors.rightMargin: 14
-                  anchors.bottomMargin: 9
-                  height: 2
-                  radius: 1
-                  color: Qt.rgba(146 / 255, 167 / 255, 203 / 255, 0.14)
+              // Right: Battery (rendered if supported / present)
+              Row {
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 6
+                visible: root.hasBattery
+
+                Item {
+                  width: 20
+                  height: 11
+                  anchors.verticalCenter: parent.verticalCenter
 
                   Rectangle {
-                    id: fill
-
-                    property real progress: (clock.date.getSeconds() + clock.date.getMilliseconds() / 1000) / 60
-                    property real targetWidth: parent.width * progress
-
                     anchors.left: parent.left
                     anchors.top: parent.top
                     anchors.bottom: parent.bottom
-                    width: targetWidth
-                    radius: 1
-                    color: "#92a7cb"
+                    width: parent.width - 2
+                    radius: 2
+                    color: "transparent"
+                    border.color: "#666666"
+                    border.width: 1
 
-                    // Only animate forward steps; the 59->0 reset snaps.
-                    Behavior on width {
-                      enabled: fill.targetWidth > fill.width
-                      NumberAnimation {
-                        duration: 250
-                        easing.type: Easing.OutCubic
-                      }
+                    Rectangle {
+                      anchors.left: parent.left
+                      anchors.top: parent.top
+                      anchors.bottom: parent.bottom
+                      anchors.margins: 1.5
+                      width: Math.max(1, (parent.width - 3) * Math.min(100, Math.max(0, root.batteryPct)) / 100)
+                      radius: 1
+                      color: root.isCharging ? "#42dc00" : (root.batteryPct <= 20 ? "#ff5555" : "#e0e0e0")
                     }
                   }
+
+                  Rectangle {
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 2
+                    height: 5
+                    radius: 0.5
+                    color: "#666666"
+                  }
+                }
+
+                Text {
+                  text: (root.isCharging ? "⚡ " : "") + root.batteryPct + "%"
+                  color: root.isCharging ? "#42dc00" : (root.batteryPct <= 20 ? "#ff5555" : "#cccccc")
+                  font.pixelSize: 11
+                  font.family: "Comic Mono, monospace"
+                  anchors.verticalCenter: parent.verticalCenter
                 }
               }
             }

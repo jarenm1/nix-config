@@ -31,8 +31,8 @@ let
 in {
   xdg.configFile."niri/config.kdl".text = ''
     spawn-at-startup "${pkgs.swaybg}/bin/swaybg" "-i" "${./wallpaper.jpg}" "-m" "fill"
-    ${lib.optionalString config.programs.quickshellClock.enable ''
-    spawn-at-startup "${lib.getExe config.programs.quickshellClock.package}" "-p" "${config.xdg.configHome}/quickshell/${config.programs.quickshellClock.configName}"
+    ${lib.optionalString config.programs.quickshellBar.enable ''
+    spawn-at-startup "${lib.getExe config.programs.quickshellBar.package}" "-p" "${config.xdg.configHome}/quickshell/${config.programs.quickshellBar.configName}"
     ''}
     spawn-at-startup "${lib.getExe niriPortalBootstrap}"
 
