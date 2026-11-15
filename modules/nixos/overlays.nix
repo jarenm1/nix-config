@@ -10,7 +10,6 @@
           hash = "sha256-lR7iruhV8IWVruxiJSJqKY0/6oOj3NZGXAnLzN9+hI8=";
         };
       });
-      t4-code = final.callPackage ../../pkgs/t4-code.nix { };
       tern = final.callPackage ../../pkgs/tern.nix { };
       sober = final.writeShellScriptBin "sober" ''
         exec ${final.gamemode}/bin/gamemoderun ${final.flatpak}/bin/flatpak run --system --file-forwarding org.vinegarhq.Sober "$@"

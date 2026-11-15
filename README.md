@@ -2,7 +2,7 @@
 
 Pure NixOS configuration for two machines:
 
-- `desktop`: Nvidia, gaming, Docker, and remote build host.
+- `desktop`: Nvidia, gaming, Unreal Engine, Docker, and remote build host.
 - `laptop`: remote build client without desktop gaming packages.
 
 ## Structure

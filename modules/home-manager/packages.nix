@@ -45,6 +45,7 @@ in
     pkgs.git
     pkgs.neovim
     pkgs.firefox
+    pkgs.google-chrome
     pkgs.wofi
     pkgs.ripgrep
     pkgs.ghostty
@@ -59,10 +60,12 @@ in
     pkgs.grim
     pkgs.kdePackages.dolphin
     pkgs.gh
+    pkgs.gitkraken
     pkgs.awscli2
     pkgs.playerctl
     pkgs.wayland
     pkgs.wayland-protocols
+    pkgs.xwayland
     pkgs.libxkbcommon
     pkgs.helix
     pkgs.vulkan-loader
@@ -76,7 +79,9 @@ in
     pkgs.jujutsu
     pkgs.opencode
     pkgs.claude-code
+    pkgs.antigravity-cli
     pkgs.herdr
+    pkgs.t3code
     pkgs.unzip
     pkgs.gcc
     pkgs.clang-tools
@@ -114,7 +119,6 @@ in
     (inputs.oh-my-pi.packages.${pkgs.stdenv.hostPlatform.system}.default.override {
       withWaylandScreencast = true;
     })
-    pkgs.t4-code
     pkgs.tern
     inputs.rose-pine-hyprcursor.packages.${pkgs.stdenv.hostPlatform.system}.default
     inputs.canvas-cli.packages.${pkgs.stdenv.hostPlatform.system}.default

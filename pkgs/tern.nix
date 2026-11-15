@@ -1,6 +1,6 @@
 { lib
 , stdenv
-, fetchurl
+, requireFile
 , autoPatchelfHook
 , copyDesktopItems
 , makeDesktopItem
@@ -29,7 +29,7 @@
 
 let
   pname = "tern";
-  version = "0.5.3";
+  version = "0.9.12";
 
   libPath = lib.makeLibraryPath [
     stdenv.cc.cc.lib
@@ -53,9 +53,15 @@ in
 stdenv.mkDerivation {
   inherit pname version;
 
-  src = fetchurl {
-    url = "https://build.stencil.so/d/tern/20261006-203431-b7f1010/Tern-${version}-linux-x86_64.tar.gz";
-    hash = "sha256-ROZMeGXsA/OQU6mhwNsUSXjhFiiH4v99WJQiDxD2mSw=";
+  # Stencil builds are behind login, so the tarball is taken from the local store.
+  src = requireFile {
+    name = "Tern-${version}-linux-x86_64.tar.gz";
+    url = "https://build.stencil.so/d/tern/20261104-230819-e498b49/Tern-${version}-linux-x86_64.tar.gz";
+    hash = "sha256-9n6MK/9DfzNlrjpHi7wY9jr7blO9bnzVVrrHziTRNpM=";
+    message = ''
+      Download Tern-0.9.12-linux-x86_64.tar.gz from the URL above (Stencil login required), then run:
+        nix-store --add-fixed sha256 Tern-0.9.12-linux-x86_64.tar.gz
+    '';
   };
 
   sourceRoot = ".";
