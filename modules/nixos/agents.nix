@@ -25,6 +25,7 @@ in
     ];
     openssh.authorizedKeys.keys = [
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIATNVX7O7yskFbJEuLellnTZRbpnweyh4lWEjya7hMCw jaren@claude-byob-testing"
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINpEQ7RlZpS47hbqbObr3y1O9FjNeN3/34e41Wd1gmit tern@laptop"
     ];
     # Agent services and sandboxes keep running after the ssh session ends.
     linger = true;
@@ -34,8 +35,9 @@ in
   programs.ssh.knownHosts."github.com".publicKey =
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl";
 
-  # Tern reaches agent sessions through the agent's own Tern remote service: jaren's Tern (top space) opens
-  # tabs that run as `agent`. Loopback only, no relay; jaren's ssh key is the only login. The host key lives
+  # Tern reaches agent sessions through the agent's own Tern remote service: jaren's Tern (here or on the
+  # laptop over the tailnet) opens tabs that run as `agent`. UDP 8377 is reachable only where the firewall
+  # trusts the interface (lo, tailscale0); no relay; jaren's ssh key is the only login. The host key lives
   # in the state dir, so the fingerprint pinned in jaren's ~/.config/tern/known_hosts stays valid.
   systemd.user.services.tern-remote-agent = {
     description = "Tern remote sessions (agent)";
@@ -47,7 +49,7 @@ in
     wantedBy = [ "default.target" ];
     serviceConfig = {
       Type = "exec";
-      ExecStart = "${pkgs.tern}/bin/tern remote serve --user --listen [::1]:8377 --relay none --authorized-keys /etc/ssh/authorized_keys.d/agent --state-dir %h/.config/tern";
+      ExecStart = "${pkgs.tern}/bin/tern remote serve --user --listen [::]:8377 --relay none --authorized-keys /etc/ssh/authorized_keys.d/agent --state-dir %h/.config/tern";
       Restart = "on-failure";
       RestartSec = 2;
       RestartPreventExitStatus = 2;
