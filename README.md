@@ -24,3 +24,17 @@ Build or inspect a host with:
 nix build .#nixosConfigurations.desktop.config.system.build.toplevel
 nix build .#nixosConfigurations.laptop.config.system.build.toplevel
 ```
+
+## Checks and safe switching
+
+- `nix flake check` boots each host's real module set in a VM (`checks.x86_64-linux.host-<name>`), with only the
+  hardware replaced by the VM's disk, then runs `switch-to-configuration test` and checks again. Checks that
+  pass here do not prove the GPU, NPU, or firmware work on real hardware.
+- `safe-switch` (installed on every host) tests a new system with a rollback deadline: `sudo safe-switch <toplevel>`
+  rolls back unless `sudo safe-switch confirm` runs in time. A reboot before confirmation boots the old generation.
+- `nix run .#deploy -- <host>` runs the host check, copies the closure, switches with the deadline armed, and
+  confirms only after the host answers. A host that stops answering rolls itself back.
+- Hardware watchdog reboots a wedged machine; `disk-guard` logs a journal warning when `/` drops below 10% free.
+
+Bootstrap: a host must already run `safe-switch` before `deploy` can use it. Switch each host once by hand
+(`sudo nixos-rebuild switch --flake .#<host>`) and watch it come back before relying on `deploy`.
