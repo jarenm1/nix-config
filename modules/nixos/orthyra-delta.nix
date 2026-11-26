@@ -26,16 +26,8 @@ in
         "jaren"
         "agent"
       ];
-      # Point-in-time recovery to /var/lib/delta-backup, mirrored to box over SFTP. Box being offline never
-      # touches production; the mirror catches up when it returns. Private key: root-only, placed by hand at
-      # /var/lib/delta-secrets/offsite-sftp/key.
-      backup = {
-        enable = true;
-        offsite = {
-          host = "100.123.249.17"; # box, over the tailnet
-          hostKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ69CSuLw6+J14rbIJIylwl+SCPQxw4OUNTfSPU8IHPb";
-        };
-      };
+      # Point-in-time recovery to /var/lib/delta-backup on this disk. No off-site copy for now.
+      backup.enable = true;
     };
     connectors = scheduled "schedules.nix";
     watches = scheduled "watch-schedules.nix";
