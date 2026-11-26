@@ -14,6 +14,9 @@
     docker = import ./nixos/docker.nix;
     nvidia = import ./nixos/nvidia.nix;
     kestrel-devbox = import ./nixos/kestrel-devbox.nix;
+    orthyra-delta = import ./nixos/orthyra-delta.nix;
+    orthyra-ci = import ./nixos/orthyra-ci.nix;
+    agents = import ./nixos/agents.nix;
   };
 
   flake.nixosModules.desktop.imports = [
@@ -25,6 +28,9 @@
     self.nixosModules.nvidia
     self.nixosModules.remote-build-host
     self.nixosModules.kestrel-devbox
+    self.nixosModules.orthyra-delta
+    self.nixosModules.orthyra-ci
+    self.nixosModules.agents
   ];
 
   flake.nixosModules.default.imports = [

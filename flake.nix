@@ -35,6 +35,9 @@
     nix-flatpak = {
       url = "github:gmodena/nix-flatpak";
     };
+    # Production Delta services (modules/nixos/orthyra-delta.nix). The local clone's git store, pinned by
+    # flake.lock to one revision of main; it does not follow nixpkgs, so builds match what orthyra's CI checks.
+    orthyra.url = "git+file:///home/jaren/orthyra?ref=main";
   };
 
   outputs = inputs@{ flake-parts, nixpkgs, ... }:
