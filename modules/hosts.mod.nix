@@ -14,6 +14,7 @@ let
 in
 {
   flake.nixosConfigurations = {
+    box = mkHost "box" "desktop" ../hosts/box;
     desktop = mkHost "desktop" "desktop" ../hosts/desktop;
     laptop = mkHost "laptop" "laptop" ../hosts/laptop;
   };

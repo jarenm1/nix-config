@@ -28,9 +28,6 @@
     self.nixosModules.nvidia
     self.nixosModules.remote-build-host
     self.nixosModules.kestrel-devbox
-    self.nixosModules.orthyra-delta
-    self.nixosModules.orthyra-ci
-    self.nixosModules.agents
   ];
 
   flake.nixosModules.default.imports = [

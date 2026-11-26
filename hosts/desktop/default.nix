@@ -1,6 +1,12 @@
 { pkgs, ... }:
 {
-  imports = [ ./hardware.nix ];
+  imports = [
+    ./hardware.nix
+    # This machine is the Delta production host. Box shares the desktop profile and must not run these.
+    ../../modules/nixos/orthyra-delta.nix
+    ../../modules/nixos/orthyra-ci.nix
+    ../../modules/nixos/agents.nix
+  ];
 
   systemd.slices.user.sliceConfig.ManagedOOMSwap = "kill";
 
