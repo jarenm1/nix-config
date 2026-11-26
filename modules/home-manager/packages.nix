@@ -117,15 +117,7 @@ in
     pkgs.code-cursor
     pkgs.cargo
     pkgs.obsidian
-    ((inputs.oh-my-pi.packages.${pkgs.stdenv.hostPlatform.system}.default.override {
-      withWaylandScreencast = true;
-    }).overrideAttrs (old: {
-      # Unmerged upstream fixes; drop each once its PR lands.
-      patches = (old.patches or [ ]) ++ [
-        ../../pkgs/patches/omp/16512-chunk-dir-naming.patch # duplicate chunk path after the pi-tui rewrite
-        ../../pkgs/patches/omp/20371-agy-file-token-storage.patch # antigravity-cli /login on agy 1.5.16
-      ];
-    }))
+    (import ../../pkgs/omp.nix { inherit inputs pkgs; })
     pkgs.tern
     inputs.rose-pine-hyprcursor.packages.${pkgs.stdenv.hostPlatform.system}.default
     inputs.canvas-cli.packages.${pkgs.stdenv.hostPlatform.system}.default
