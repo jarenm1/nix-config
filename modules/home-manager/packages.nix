@@ -42,7 +42,6 @@ let
 in
 {
   home.packages = [
-    pkgs.git
     pkgs.neovim
     pkgs.firefox
     pkgs.google-chrome
@@ -81,7 +80,7 @@ in
     pkgs.claude-code
     pkgs.antigravity-cli
     pkgs.herdr
-    pkgs.t3code
+    (pkgs.t3code.override { codex = masterCodex; })
     pkgs.unzip
     pkgs.gcc
     pkgs.clang-tools
@@ -95,13 +94,15 @@ in
     pkgs.md-tui
     pkgs.uv
     pkgs.python3
+    pkgs.python3Packages.huggingface-hub # `hf` CLI
+    pkgs.google-colab-cli # `colab` CLI
     pkgs.libreoffice
     pkgs.fastfetch
     pkgs.zathura
     pkgs.basedpyright
     pkgs.obs-studio
     masterCodex
-    pkgs.codex-acp
+    (pkgs.codex-acp.override { codex = masterCodex; })
     pkgs.piper
     pkgs.pavucontrol
     pkgs.v4l-utils
@@ -116,9 +117,15 @@ in
     pkgs.code-cursor
     pkgs.cargo
     pkgs.obsidian
-    (inputs.oh-my-pi.packages.${pkgs.stdenv.hostPlatform.system}.default.override {
+    ((inputs.oh-my-pi.packages.${pkgs.stdenv.hostPlatform.system}.default.override {
       withWaylandScreencast = true;
-    })
+    }).overrideAttrs (old: {
+      # Unmerged upstream fixes; drop each once its PR lands.
+      patches = (old.patches or [ ]) ++ [
+        ../../pkgs/patches/omp/16512-chunk-dir-naming.patch # duplicate chunk path after the pi-tui rewrite
+        ../../pkgs/patches/omp/20371-agy-file-token-storage.patch # antigravity-cli /login on agy 1.5.16
+      ];
+    }))
     pkgs.tern
     inputs.rose-pine-hyprcursor.packages.${pkgs.stdenv.hostPlatform.system}.default
     inputs.canvas-cli.packages.${pkgs.stdenv.hostPlatform.system}.default

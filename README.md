@@ -5,6 +5,9 @@ Pure NixOS configuration for two machines:
 - `desktop`: Nvidia, gaming, Unreal Engine, Docker, and remote build host.
 - `laptop`: remote build client without desktop gaming packages.
 
+The desktop enables systemd-oomd swap monitoring for user applications. Under
+severe memory and swap pressure, it may terminate an application to preserve responsiveness.
+
 ## Structure
 
 - `hosts/`: hardware and machine-specific facts.

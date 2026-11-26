@@ -11,6 +11,7 @@
         };
       });
       tern = final.callPackage ../../pkgs/tern.nix { };
+      google-colab-cli = final.callPackage ../../pkgs/google-colab-cli.nix { };
       sober = final.writeShellScriptBin "sober" ''
         exec ${final.gamemode}/bin/gamemoderun ${final.flatpak}/bin/flatpak run --system --file-forwarding org.vinegarhq.Sober "$@"
       '';

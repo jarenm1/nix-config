@@ -8,7 +8,6 @@ let
     name = "unreal-engine";
     targetPkgs = pkgs: with pkgs; [
       # Source builds (SetupToolchain.sh, GenerateProjectFiles.sh) and project tooling
-      git
       git-lfs
       python3
       cmake

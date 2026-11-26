@@ -5,6 +5,7 @@
     ./core/locale.nix
     ./core/users.nix
     ./core/nix.nix
+    ./core/btrfs.nix
     ./core/networking.nix
     ./core/hardware.nix
     ./core/packages.nix

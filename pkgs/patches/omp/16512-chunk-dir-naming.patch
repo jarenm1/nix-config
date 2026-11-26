@@ -1,0 +1,18 @@
+fix(build): preserve source directories in discovery chunks
+Upstream: https://github.com/can1357/oh-my-pi/pull/16512
+
+diff --git a/packages/coding-agent/scripts/compile-binary.ts b/packages/coding-agent/scripts/compile-binary.ts
+index 6ed1a84e757d..733f0361e8a1 100644
+--- a/packages/coding-agent/scripts/compile-binary.ts
++++ b/packages/coding-agent/scripts/compile-binary.ts
+@@ -60,8 +60,8 @@ export async function compileCodingAgent(options: CodingAgentCompileOptions): Pr
+ 			format: "esm",
+ 			bytecode: true,
+ 			splitting: true,
+-			// Discovery entry chunks can share a hash; include their source names to avoid collisions.
+-			naming: { chunk: "chunks/[name]-[hash].[ext]" },
++			// Identical discovery modules can share both basename and hash; retain their source directories.
++			naming: { chunk: "chunks/[dir]/[name]-[hash].[ext]" },
+ 			minify: {
+ 				identifiers: options.minifyIdentifiers ?? false,
+ 				keepNames: true,

@@ -1,0 +1,62 @@
+fix(antigravity-cli): force agy file token storage so sign-in exports the grant
+Upstream: https://github.com/can1357/oh-my-pi/pull/20371 (src changes only; CHANGELOG/test hunks dropped)
+
+diff --git a/packages/ai/src/providers/antigravity-cli/credentials.ts b/packages/ai/src/providers/antigravity-cli/credentials.ts
+index 465f360980..22d967029a 100644
+--- a/packages/ai/src/providers/antigravity-cli/credentials.ts
++++ b/packages/ai/src/providers/antigravity-cli/credentials.ts
+@@ -144,13 +144,13 @@ export function agyCredentialVersion(apiKey: string): string {
+ 
+ /**
+  * Apply ONLY to agy's subprocess, never omp or host-executed tools.
+- * agy has no file-storage flag. Its native sshDetector checks SSH_TTY for a
+- * nonempty value (it does not open the path), selecting file-only storage for
+- * the process lifetime. This explicit headless marker prevents both reads and
+- * writes of the user's global keychain, including during login and refresh.
++ * Selects file-only token storage for the process lifetime, so login and
++ * refresh never read or write the user's global keychain. agy 1.5.16 ignores
++ * SSH_TTY on macOS and honors only AGY_CLI_FORCE_FILE_TOKEN_STORAGE; earlier
++ * builds (reachable through PI_AGY_PATH) have only the SSH_TTY detector.
+  */
+ export function agyCredentialEnv(): Record<string, string> {
+-	return { SSH_TTY: "omp-agy-file-auth" };
++	return { AGY_CLI_FORCE_FILE_TOKEN_STORAGE: "1", SSH_TTY: "omp-agy-file-auth" };
+ }
+ 
+ /**
+diff --git a/packages/ai/src/registry/oauth/antigravity-cli.ts b/packages/ai/src/registry/oauth/antigravity-cli.ts
+index 2ba2ceb0ac..68d11d5c3c 100644
+--- a/packages/ai/src/registry/oauth/antigravity-cli.ts
++++ b/packages/ai/src/registry/oauth/antigravity-cli.ts
+@@ -168,23 +168,14 @@ export async function loginAntigravityCli(ctrl: OAuthController): Promise<OAuthC
+ 	let exported = false;
+ 	try {
+ 		if (signal.aborted) throw new AIError.LoginCancelledError("Antigravity CLI sign-in cancelled");
+-		const process = Bun.spawn(
+-			[
+-				binary,
+-				"acp",
+-				"--login",
+-				"--gemini-dir",
+-				directory,
+-				"--app-data-dir",
+-				path.join(directory, "antigravity-cli"),
+-			],
+-			{
+-				stdin: "pipe",
+-				stdout: "pipe",
+-				stderr: "pipe",
+-				env: { ...Bun.env, ...agyCredentialEnv(), AGY_CLI_DISABLE_AUTO_UPDATE: "1" },
+-			},
+-		);
++		// agy 1.5.16 nests an absolute --app-data-dir under --gemini-dir, so rely on
++		// its default app-data-dir, the same antigravity-cli subdirectory the host uses.
++		const process = Bun.spawn([binary, "acp", "--login", "--gemini-dir", directory], {
++			stdin: "pipe",
++			stdout: "pipe",
++			stderr: "pipe",
++			env: { ...Bun.env, ...agyCredentialEnv(), AGY_CLI_DISABLE_AUTO_UPDATE: "1" },
++		});
+ 		child = process;
+ 		const onAbort = () => process.kill("SIGKILL");
+ 		signal.addEventListener("abort", onAbort, { once: true });

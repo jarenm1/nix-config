@@ -81,6 +81,14 @@ in {
       match app-id=r#"^org\.vinegarhq\.Sober$"# title="^Sober$"
       open-maximized true
     }
+
+    // Steam's notification toasts must not steal focus or sit in the center.
+    window-rule {
+      match title="^notificationtoasts_"
+      open-focused false
+      open-floating true
+      default-floating-position x=12 y=12 relative-to="bottom-right"
+    }
     
     binds {
       // Spawn programs
