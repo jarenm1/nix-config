@@ -250,6 +250,28 @@
         "type": "github"
       }
     },
+    "microvm": {
+      "inputs": {
+        "nixpkgs": [
+          "orthyra",
+          "nixpkgs"
+        ],
+        "spectrum": "spectrum"
+      },
+      "locked": {
+        "lastModified": 1795298370,
+        "narHash": "sha256-mruPu1cqOVBxPiRwrh6r1tnX1OAzMggy+rDk6YuqhK8=",
+        "owner": "astro",
+        "repo": "microvm.nix",
+        "rev": "430a46d03ef15f1b8b715fafa85f21847960b783",
+        "type": "github"
+      },
+      "original": {
+        "owner": "astro",
+        "repo": "microvm.nix",
+        "type": "github"
+      }
+    },
     "niri": {
       "inputs": {
         "niri-stable": "niri-stable",
@@ -467,17 +489,18 @@
     },
     "orthyra": {
       "inputs": {
+        "microvm": "microvm",
         "nixpkgs": "nixpkgs_2",
         "pyproject-build-systems": "pyproject-build-systems",
         "pyproject-nix": "pyproject-nix",
         "uv2nix": "uv2nix"
       },
       "locked": {
-        "lastModified": 1795677160,
-        "narHash": "sha256-3PSVcsmBL0ym1pA5BlVD0PC8YqYNFxgg8HJfDgMim/0=",
+        "lastModified": 1795737276,
+        "narHash": "sha256-uZLjG/BNEqsZjfJiip+69S0qR8fIYWxOJtol6ccRP+U=",
         "ref": "main",
-        "rev": "679e2101d1614d8baee61074c391cf14147a4260",
-        "revCount": 73,
+        "rev": "391d2d5653a42ca20b1c1f9b341c67181a2a9fbe",
+        "revCount": 75,
         "type": "git",
         "url": "file:///home/jaren/orthyra"
       },
@@ -610,6 +633,22 @@
         "owner": "oxalica",
         "repo": "rust-overlay",
         "type": "github"
+      }
+    },
+    "spectrum": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1786032750,
+        "narHash": "sha256-+Ba/kIn5BjvV7PN8bWOo7RoqgTY/Yv2M7qeMf3wS2Ag=",
+        "ref": "refs/heads/main",
+        "rev": "77d2389874bb092b8dbf05ecc5b1030372e80e98",
+        "revCount": 1417,
+        "type": "git",
+        "url": "https://spectrum-os.org/git/spectrum"
+      },
+      "original": {
+        "type": "git",
+        "url": "https://spectrum-os.org/git/spectrum"
       }
     },
     "systems": {

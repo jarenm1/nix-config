@@ -77,9 +77,18 @@ let
         log "armed: $previous comes back in $minutes min unless confirmed"
 
         if ! switch "$toplevel" test; then
-          log "switch to $toplevel failed"
-          rollback_now || true
-          exit 1
+          # switch-to-configuration also exits non-zero when only a reload failed (a stuck dbus-broker reload
+          # did this). Roll back now only if the new system is not actually up; otherwise stay armed and let
+          # the deployer's health check decide, with the deadline as the backstop.
+          if [ "$(readlink -f /run/current-system)" = "$toplevel" ] \
+            && systemctl is-active --quiet sshd.service tailscaled.service \
+            && [ -z "$(systemctl list-units --state=failed --no-legend --plain)" ]; then
+            log "switch to $toplevel reported errors but the system is up with no failed units; still armed"
+          else
+            log "switch to $toplevel failed"
+            rollback_now || true
+            exit 1
+          fi
         fi
         log "$toplevel is running; run 'safe-switch confirm' within $minutes min"
       }
