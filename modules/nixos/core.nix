@@ -10,6 +10,9 @@
     ./core/hardware.nix
     ./core/packages.nix
     ./core/services.nix
+    ./core/safe-switch.nix
+    ./core/watchdog.nix
+    ./core/disk-guard.nix
   ];
 
   system.stateVersion = "25.05";
