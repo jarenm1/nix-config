@@ -473,11 +473,11 @@
         "uv2nix": "uv2nix"
       },
       "locked": {
-        "lastModified": 1795670887,
-        "narHash": "sha256-H5qWd+UUaJqHcAoKxT3p17RMIvo/9bZDX5nzAA0GPfc=",
+        "lastModified": 1795673675,
+        "narHash": "sha256-eRUjzX/2cPp7NcRHprjbuPwvmHPCs0irki9UWdGyKM0=",
         "ref": "main",
-        "rev": "ede89e750fd35958b3a8b3513a6d72bdf92e3611",
-        "revCount": 63,
+        "rev": "9d44c72aa09ac7a3e24929be234c8e63c4234b17",
+        "revCount": 70,
         "type": "git",
         "url": "file:///home/jaren/orthyra"
       },

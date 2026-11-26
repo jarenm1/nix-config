@@ -26,6 +26,8 @@ in
         "jaren"
         "agent"
       ];
+      # Point-in-time recovery to /var/lib/delta-backup. Off-site (box) waits for bounded WAL archiving.
+      backup.enable = true;
     };
     connectors = scheduled "schedules.nix";
     watches = scheduled "watch-schedules.nix";
